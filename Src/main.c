@@ -9,7 +9,9 @@
 int main(void)
 {
   RCC->IOPENR |= (1 << 0);
-  GPIOA->MODER = (1 << (2 * 5));
+
+  GPIOA->MODER &= ~(3 << (2 * 5));
+  GPIOA->MODER |= (1 << (2 * 5));
 
   while(1)
   {
