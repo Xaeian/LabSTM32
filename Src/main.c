@@ -16,8 +16,8 @@ int main(void)
   while(1)
   {
     GPIOA->ODR |= (1 << 5);
-    delay_ms(200);
+    delay_ms(500);
     GPIOA->ODR &= ~(1 << 5);
-    delay_ms(200);
+    delay_ms(500);
   }
 }
