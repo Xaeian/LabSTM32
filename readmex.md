@@ -20,3 +20,11 @@ W projekcie zaimplementowane są pliki pliki dla procesora **STM32G081xx** jedna
 Projekt obsługuje wersję procesorów z **128kB** pamięci **FLASH** oraz **36kB** pamięci **RAM**. W przypadku innych konfiguracji konieczna jest podmiana pliku `STM32G081RBTx_Flash.ld`
 
 Program startowy z częstotliowścią 400ms miga diodą podpiędą do pinu **PA5** na płytce **NUCLEO**.
+Przycisk jest podpięty do pinu **PC13**
+
+Wyprowadzenia peryferiuów kompatybilnych z płytkami rozszerzeń dla Arduino:
++ ADC: (0)
++ UART:
++ SPI:
++ I2C:
+
