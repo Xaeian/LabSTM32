@@ -104,7 +104,7 @@ GPIOC->MODER &= ~GPIO_MODER_MODE13;
 
 while(1)
 {
-  if(!(GPIOC->IDR & (GPIOC->13))) GPIOA->BSRR |= GPIO_BSRR_BS5;
+  if(!(GPIOC->IDR & (1 << 13))) GPIOA->BSRR |= GPIO_BSRR_BS5;
   else GPIOA->BSRR |= GPIO_BSRR_BR5;
 }
 ```
