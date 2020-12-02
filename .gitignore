@@ -1,7 +1,1 @@
-.git/
-.settings/
-Hardware/
-Debug/
-*.elf
-*.launch
-
+hardware/

@@ -1,0 +1,6 @@
+.git/
+.settings/
+Debug/
+*.elf
+*.launch
+
