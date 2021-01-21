@@ -42,7 +42,7 @@ W pętli głównej na przemian ustawiamy i kasujemy bit z rejestru [`GPIOA->ODR`
 
 W procesorach STM32 nie mamy wbudowanej funkcji `delay_ms` tak jak to działało w mikrokontrolerach **AVR**. Po prostu nie ma takeij potrzeby, ponieważ w procesorze Atmega328P mieliśmy 3 timery z czego w **Arduino** jeden był wykorzystywany do _nie wiem czego_. Procesory **STM32** z rodziny **G0** mamy do dyspozycji 12 timerów (nie licząc watchdoga) i jeden z nich możemy wykorzystać w celu oprogramowania funkcji `delay_ms`. Takie rozwiązanie będzie znacznie bardziej dokładne i precyzyjne. Nie mniej takie rozwiązanie będzie wystarczające w wielu przypadkach.
 
-Na tym etapie warto usunąć linijki zawierające funkcje delay_ms oraz odpalić kod w debugerze - _ikonka takiego żuka_.
+Na tym etapie warto usunąć linijki zawierające funkcje delay*ms oraz odpalić kod w debugerze - \_ikonka takiego żuka*.
 
 Wracając do samego kodu. W przypadku niektórych rejestrów dobrą praktyką może okazać się zastąpienie przesunięć bitowych definicjami, które są zawartę w plikach nagówkowych dostarczomchy przez ST.
 
@@ -255,34 +255,60 @@ if(RCC->CSR & RCC_CSR_IWDGRSTF)
 
 # UART
 
-Wysyłanie konejnych znaków
+Konfiguracja GPIO
+
+```cpp
+RCC->IOPENR |= RCC_IOPSMENR_GPIOASMEN;
+GPIOA->MODER &= ~(GPIO_MODER_MODE9_Msk | GPIO_MODER_MODE10_Msk);
+GPIOA->MODER |= (2 << GPIO_MODER_MODE9_Pos) | (2 << GPIO_MODER_MODE10_Pos);
+GPIOA->AFR[1] &= ~(GPIO_AFRH_AFSEL9_Msk | GPIO_AFRH_AFSEL10_Msk);
+GPIOA->AFR[1] |= (1 << GPIO_AFRH_AFSEL9_Pos) | (1 << GPIO_AFRH_AFSEL10_Pos);
+```
+
+Konfiguracja UART
 
 ```cpp
 RCC->APBENR2 |= RCC_APBENR2_USART1EN;
-RCC->IOPENR |= RCC_IOPSMENR_GPIOASMEN;
-
-GPIOA->MODER &= ~(GPIO_MODER_MODE9_Msk | GPIO_MODER_MODE10_Msk);
-GPIOA->MODER |= (2 << GPIO_MODER_MODE9_Pos) | (2 << GPIO_MODER_MODE10_Pos);
-
-GPIOA->AFR[1] &= ~(GPIO_AFRH_AFSEL9_Msk | GPIO_AFRH_AFSEL10_Msk);
-GPIOA->AFR[1] |= (1 << GPIO_AFRH_AFSEL9_Pos) | (1 << GPIO_AFRH_AFSEL10_Pos);
-
 USART1->BRR = SystemCoreClock / 9600;
 USART1->CR3 |= USART_CR3_OVRDIS;
-
 while((USART1->ISR & USART_ISR_TC) != USART_ISR_TC);
-
 USART1->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+
+USART1->CR1 |= USART_CR1_RXNEIE_RXFNEIE | USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+NVIC_SetPriority(USART1_IRQn, 2);
+NVIC_EnableIRQ(USART1_IRQn);
 
 USART1->ICR |= USART_ICR_TCCF;
 USART1->RQR |= USART_RQR_RXFRQ;
+```
 
-uint8_t send = '0';
+Wysyłanie konejnych znaków
 
-while(1)
-{
-  USART1->TDR = send;
-  send++;
+```cpp
+uint8_t var = '0';
+while(1) {
+  USART1->TDR = var;
+  var++;
   delay_ms(200);
+}
+```
+
+Odbieranie i odsyłanie zakodowanych znaków koden cezara
+
+```cpp
+void USART1_IRQHandler(void)
+{
+  if(USART1->ISR & USART_ISR_RXNE_RXFNE)
+  {
+    uint8_t var = (uint8_t)(USART1->RDR);
+
+    if(var >= 'a' && var <= 'z')
+    {
+      var += 3;
+      if(var > 'z')
+        var -= ('z' - 'a' + 1);
+      USART1->TDR = var;
+    }
+  }
 }
 ```
