@@ -8,7 +8,7 @@ TODO
 
 # 2. IDE, Dioda, Przycisk
 
-Moim nieskromnym zdaniem w nauce programowania, *potem w sumie też*, ważne jest żeby osiągać jakieś efekty szybko. Praca z systemami wbudowanymi posiada niekończące się zagadanienia poboczne, jak konfiguracja środowiska, hardware itd. Zatem pominiemy to wszystko, ściągniemy środowisko [**STM32CubeIDE**](https://www.st.com/en/development-tools/stm32cubeide.html), dostarczane **ST**, następnie klonujemy [repozutorium **nucleo**](https://github.com/Xaeian/nucleo) z przygotowanym proejktem bazowym.
+Moim nieskromnym zdaniem w nauce programowania, _potem w sumie też_, ważne jest żeby osiągać jakieś efekty szybko. Praca z systemami wbudowanymi posiada niekończące się zagadanienia poboczne, jak konfiguracja środowiska, hardware itd. Zatem pominiemy to wszystko, ściągniemy środowisko [**STM32CubeIDE**](https://www.st.com/en/development-tools/stm32cubeide.html), dostarczane **ST**, następnie klonujemy [repozutorium **nucleo**](https://github.com/Xaeian/nucleo) z przygotowanym proejktem bazowym.
 
     git clone https://github.com/Xaeian/nucleo.git
 
@@ -40,9 +40,9 @@ W pętli głównej na przemian ustawiamy i kasujemy bit z rejestru [`GPIOA->ODR`
 #define delay_ms(ms) for(int __i = 3203*ms; __i; __i--) __NOP()
 ```
 
-W procesorach STM32 nie mamy wbudowanej funkcji `delay_ms` tak jak to działało w mikrokontrolerach **AVR**. Po prostu nie ma takeij potrzeby, ponieważ w procesorze Atmega328P mieliśmy 3 timery z czego w **Arduino** jeden był wykorzystywany do *nie wiem czego*. Procesory **STM32** z rodziny **G0** mamy do dyspozycji 12 timerów (nie licząc watchdoga) i jeden z nich możemy wykorzystać w celu oprogramowania funkcji `delay_ms`. Takie rozwiązanie będzie znacznie bardziej dokładne i precyzyjne. Nie mniej takie rozwiązanie będzie wystarczające w wielu przypadkach.
+W procesorach STM32 nie mamy wbudowanej funkcji `delay_ms` tak jak to działało w mikrokontrolerach **AVR**. Po prostu nie ma takeij potrzeby, ponieważ w procesorze Atmega328P mieliśmy 3 timery z czego w **Arduino** jeden był wykorzystywany do _nie wiem czego_. Procesory **STM32** z rodziny **G0** mamy do dyspozycji 12 timerów (nie licząc watchdoga) i jeden z nich możemy wykorzystać w celu oprogramowania funkcji `delay_ms`. Takie rozwiązanie będzie znacznie bardziej dokładne i precyzyjne. Nie mniej takie rozwiązanie będzie wystarczające w wielu przypadkach.
 
-Na tym etapie warto usunąć linijki zawierające funkcje delay_ms oraz odpalić kod w debugerze - *ikonka takiego żuka*.
+Na tym etapie warto usunąć linijki zawierające funkcje delay_ms oraz odpalić kod w debugerze - _ikonka takiego żuka_.
 
 Wracając do samego kodu. W przypadku niektórych rejestrów dobrą praktyką może okazać się zastąpienie przesunięć bitowych definicjami, które są zawartę w plikach nagówkowych dostarczomchy przez ST.
 
@@ -74,13 +74,13 @@ while(1)
 }
 ```
 
-Najlepszym jednak sposobem jest na zmianę stanu wyjścia jest skorzystanie z rejestru [`GPIOA->BSRR`](http://www.sqrt.pl/datasheet/STM32G0x1.pdf#page=208). Pozwala on *atomowo* wstawić do rejestru `GPIOA->ODR` 1 lub 0. Instrukcja `GPIOA->ODR |= GPIO_ODR_OD5` w praktyce wykonuje 3 operacje.
+Najlepszym jednak sposobem jest na zmianę stanu wyjścia jest skorzystanie z rejestru [`GPIOA->BSRR`](http://www.sqrt.pl/datasheet/STM32G0x1.pdf#page=208). Pozwala on _atomowo_ wstawić do rejestru `GPIOA->ODR` 1 lub 0. Instrukcja `GPIOA->ODR |= GPIO_ODR_OD5` w praktyce wykonuje 3 operacje.
 
-+ Pobranie wartości z rejestru `GPIOA->ODR`
-+ Wykonanie sumy bitowej z wartością `GPIO_ODR_OD5`
-+ Wpisanie do rejestru `GPIOA->ODR` wyniku operacji
+- Pobranie wartości z rejestru `GPIOA->ODR`
+- Wykonanie sumy bitowej z wartością `GPIO_ODR_OD5`
+- Wpisanie do rejestru `GPIOA->ODR` wyniku operacji
 
-W bardziej skomplikowanych aplikacjach na skutek przerwania jakaś instrukcja mogłaby się wcisnąć w środek naszej operacji, co może wprowadzać komplikacje. Korzystając z rejestru `GPIOA->BSRR` procesor wykonuje jedną operacją, co czynie tą operację niepodzielną - *atomową*.
+W bardziej skomplikowanych aplikacjach na skutek przerwania jakaś instrukcja mogłaby się wcisnąć w środek naszej operacji, co może wprowadzać komplikacje. Korzystając z rejestru `GPIOA->BSRR` procesor wykonuje jedną operacją, co czynie tą operację niepodzielną - _atomową_.
 
 ```c
 while(1)
@@ -94,7 +94,7 @@ while(1)
 
 Migająca dioda już za nami - teraz pora na przycisk. Zanim jednak zabierzemy się za jego konfigurację warto przejrzeć się wszystkim [konfiguracją **GPIO**](http://www.sqrt.pl/datasheet/STM32G0x1.pdf#page=197)
 
-Przycisk na płytce **nucleo** jest od razu podciągnięty do zasilania *(pull-up)*, więc wystarczy ustawić na jako wejście i odczytywać jego stan. Niech nasz program świeci diodą w przypadku wciśnięcia przycisku, a w przeciwnym razie niech dioda pozostanie zgaszona
+Przycisk na płytce **nucleo** jest od razu podciągnięty do zasilania _(pull-up)_, więc wystarczy ustawić na jako wejście i odczytywać jego stan. Niech nasz program świeci diodą w przypadku wciśnięcia przycisku, a w przeciwnym razie niech dioda pozostanie zgaszona
 
 [//]: 197
 
@@ -109,7 +109,6 @@ while(1)
 }
 ```
 
-
 ```c
 while(1)
 {
@@ -120,13 +119,12 @@ while(1)
 }
 ```
 
-
 # 2. Timery
 
-Nasz mikrokontroler został zaprojektowany przez firmę ARM oraz ST. W 
+Nasz mikrokontroler został zaprojektowany przez firmę ARM oraz ST. W
 
-//Timery są to liczniki, które 
-//ARM <- Rdzeń  <= SysTick ST <- Peryfgeria <- TIM1, TIM2...TIM17 -> 16MHz
+//Timery są to liczniki, które
+//ARM <- Rdzeń <= SysTick ST <- Peryfgeria <- TIM1, TIM2...TIM17 -> 16MHz
 
 ```cpp
 RCC->APBENR1 |= RCC_APBENR1_TIM7EN;
@@ -142,6 +140,7 @@ TIM7->SR &= ~TIM_SR_UIF;
 ```
 
 Handler
+
 ```cpp
 void TIM7_LPTIM2_IRQHandler(void)
 {
@@ -168,6 +167,7 @@ Pracując na płytkach NUCLEO dobrze jest mieć pod ręką rysunek z oznaczonymi
 # 3. Przerwania zewnętrzne
 
 Inicjacja
+
 ```cpp
 EXTI->EXTICR[3] |= (2 << 8);
 EXTI->FTSR1 |= EXTI_FTSR1_FT13;
@@ -177,6 +177,7 @@ NVIC_EnableIRQ(EXTI4_15_IRQn);
 ```
 
 Handler
+
 ```cpp
 void EXTI4_15_IRQHandler(void)
 {
@@ -194,11 +195,10 @@ void EXTI4_15_IRQHandler(void)
 }
 ```
 
-
-
 # 4. Watchdog
 
 Nagłówki:
+
 ```cpp
 #define IWDG_REFRESH 0x0000AAAA
 #define IWDG_WRITE_ACCESS 0x00005555
@@ -218,6 +218,7 @@ IWDG_Time_e;
 ```
 
 Inicjacja:
+
 ```cpp
 if(RCC->CSR & RCC_CSR_IWDGRSTF)
 {
@@ -237,15 +238,51 @@ IWDG->KR = IWDG_REFRESH; // Konfiguracja IWDG
 ```
 
 Reset:
+
 ```cpp
 IWDG->KR = IWDG_REFRESH;
 ```
 
 Sprawdzenie:
+
 ```cpp
 if(RCC->CSR & RCC_CSR_IWDGRSTF)
 {
   RCC->CSR |= RCC_CSR_RMVF;
   // ...
+}
+```
+
+# UART
+
+Wysyłanie konejnych znaków
+
+```cpp
+RCC->APBENR2 |= RCC_APBENR2_USART1EN;
+RCC->IOPENR |= RCC_IOPSMENR_GPIOASMEN;
+
+GPIOA->MODER &= ~(GPIO_MODER_MODE9_Msk | GPIO_MODER_MODE10_Msk);
+GPIOA->MODER |= (2 << GPIO_MODER_MODE9_Pos) | (2 << GPIO_MODER_MODE10_Pos);
+
+GPIOA->AFR[1] &= ~(GPIO_AFRH_AFSEL9_Msk | GPIO_AFRH_AFSEL10_Msk);
+GPIOA->AFR[1] |= (1 << GPIO_AFRH_AFSEL9_Pos) | (1 << GPIO_AFRH_AFSEL10_Pos);
+
+USART1->BRR = SystemCoreClock / 9600;
+USART1->CR3 |= USART_CR3_OVRDIS;
+
+while((USART1->ISR & USART_ISR_TC) != USART_ISR_TC);
+
+USART1->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+
+USART1->ICR |= USART_ICR_TCCF;
+USART1->RQR |= USART_RQR_RXFRQ;
+
+uint8_t send = '0';
+
+while(1)
+{
+  USART1->TDR = send;
+  send++;
+  delay_ms(200);
 }
 ```

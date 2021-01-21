@@ -9,66 +9,61 @@
 
 
 
-
+bool dir;
 
 int main(void)
 {
-  RCC->IOPENR |= RCC_IOPENR_GPIOAEN; // GPIO-A Enable
-  GPIOA->MODER &= ~GPIO_MODER_MODE5;
-  GPIOA->MODER |= GPIO_MODER_MODE5_0; // PA5 Output
 
-  RCC->CSR |= RCC_CSR_LSION;
-  while(RCC->CSR & RCC_CSR_LSIRDY);
+  // Zegar magistrali A
 
+  RCC->APBENR2 |= RCC_APBENR2_USART1EN;
+  RCC->IOPENR |= RCC_IOPSMENR_GPIOASMEN;
 
-  delay_ms(200);
-  GPIOA->BSRR |= GPIO_BSRR_BS5;
-  delay_ms(200);
-  GPIOA->BSRR |= GPIO_BSRR_BR5;
+  GPIOA->MODER &= ~(GPIO_MODER_MODE9_Msk | GPIO_MODER_MODE10_Msk);
+  GPIOA->MODER |= (2 << GPIO_MODER_MODE9_Pos) | (2 << GPIO_MODER_MODE10_Pos);
 
+  GPIOA->AFR[1] &= ~(GPIO_AFRH_AFSEL9_Msk | GPIO_AFRH_AFSEL10_Msk);
+  GPIOA->AFR[1] |= (1 << GPIO_AFRH_AFSEL9_Pos) | (1 << GPIO_AFRH_AFSEL10_Pos);
 
+  USART1->BRR = SystemCoreClock / 9600;
+  USART1->CR3 |= USART_CR3_OVRDIS;
 
+  while((USART1->ISR & USART_ISR_TC) != USART_ISR_TC);
 
-  delay_ms(100);
+  USART1->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
 
-  RCC->IOPENR |= RCC_IOPENR_GPIOCEN; // GPIO-C Enable
-  GPIOC->MODER &= ~GPIO_MODER_MODE13; // PC13 Input
+  //USART1->CR1 |= USART_CR1_RXNEIE_RXFNEIE | USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+  //NVIC_SetPriority(USART1_IRQn, 2);
+  //NVIC_EnableIRQ(USART1_IRQn);
 
+  USART1->ICR |= USART_ICR_TCCF;
+  USART1->RQR |= USART_RQR_RXFRQ;
 
+  // Set AF1 PA9
 
+    // Clr PA9 -> AF -> 1
+    // Set PA9 -> AF -> 1
 
-
-
-
-
-
-
-  /*
-
-
-  //
-
-
-  SysTick_Config(16000000);
-  */
+  uint8_t send = '0';
 
   while(1)
   {
-    if(!(GPIOC->IDR & (1 << 13)));
-    else
-    {
-
-    }
+    USART1->TDR = send;
+    send++;
+    delay_ms(200);
   }
 }
 
-void SysTick_Handler(void)
+/*
+void USART1_IRQHandler(void)
 {
-
+  if(USART1->ISR & USART_ISR_RXNE_RXFNE)
+  {
+    uint8_t var = (uint8_t)(USART1->RDR);
+  }
 }
+*/
 
 
-
-//OK :)
 
 
