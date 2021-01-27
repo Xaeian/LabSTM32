@@ -365,3 +365,33 @@ TIM1->CR1 |= TIM_CR1_CEN;
 
 // TIM1->CCR1 = [0..100];
 ```
+
+Aplikacja sterująca diodą RGB:
+
+```cpp
+int32_t setPWM(uint8_t *dir, int32_t *val, int32_t inc)
+{
+  if(!*dir) {
+    *val += inc;
+    if(*val >= AUTO_RELOAD) { *val = AUTO_RELOAD; *dir ^= 1; }
+  }
+  else {
+    *val -= inc;
+    if(*val <= 0) { *val = 0; *dir ^= 1; }
+  }
+  return *val;
+}
+```
+
+```cpp
+uint8_t dir[3] = { 0, 0, 0 };
+int32_t val[3] = { 0, 0, 0 };
+
+while(1)
+{
+  TIM1->CCR1 = (uint32_t)setPWM(&dir[0], &val[0], 2);
+  TIM1->CCR2 = (uint32_t)setPWM(&dir[1], &val[1], 3);
+  TIM1->CCR3 = (uint32_t)setPWM(&dir[2], &val[2], 5);
+  delay_ms(1);
+}
+```
