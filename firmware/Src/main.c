@@ -9,7 +9,6 @@
 
 
 
-bool dir;
 
 int main(void)
 {
@@ -17,58 +16,40 @@ int main(void)
   // Zegar magistrali A
 
 
+
+
   RCC->IOPENR |= RCC_IOPSMENR_GPIOASMEN;
-  GPIOA->MODER &= ~(GPIO_MODER_MODE9_Msk | GPIO_MODER_MODE10_Msk);
-  GPIOA->MODER |= (2 << GPIO_MODER_MODE9_Pos) | (2 << GPIO_MODER_MODE10_Pos);
-  GPIOA->AFR[1] &= ~(GPIO_AFRH_AFSEL9_Msk | GPIO_AFRH_AFSEL10_Msk);
-  GPIOA->AFR[1] |= (1 << GPIO_AFRH_AFSEL9_Pos) | (1 << GPIO_AFRH_AFSEL10_Pos);
+  GPIOA->MODER &= ~(GPIO_MODER_MODE8_Msk | GPIO_MODER_MODE9_Msk | GPIO_MODER_MODE10_Msk);
+  GPIOA->MODER |= (1 << GPIO_MODER_MODE8_Pos) | (1 << GPIO_MODER_MODE9_Pos) | (1 << GPIO_MODER_MODE10_Pos);
 
-  RCC->APBENR2 |= RCC_APBENR2_USART1EN;
-  USART1->BRR = SystemCoreClock / 9600;
-  USART1->CR3 |= USART_CR3_OVRDIS;
-  while((USART1->ISR & USART_ISR_TC) != USART_ISR_TC);
-  USART1->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+  GPIOA->ODR |= GPIO_ODR_OD8; //R
 
-  USART1->CR1 |= USART_CR1_RXNEIE_RXFNEIE | USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
-  NVIC_SetPriority(USART1_IRQn, 2);
-  NVIC_EnableIRQ(USART1_IRQn);
+  GPIOA->ODR &= ~GPIO_ODR_OD8; // G
+  GPIOA->ODR |= GPIO_ODR_OD9;
 
-  //USART1->ICR |= USART_ICR_TCCF;
-  //USART1->RQR |= USART_RQR_RXFRQ;
+  GPIOA->ODR &= ~GPIO_ODR_OD9;
+  GPIOA->ODR |= GPIO_ODR_OD10; //B
 
-  // Set AF1 PA9
+  GPIOA->ODR &= ~GPIO_ODR_OD10;
 
-    // Clr PA9 -> AF -> 1
-    // Set PA9 -> AF -> 1
 
-  //uint8_t send = '0';
+  TIM1: RCC->APBENR2 |= RCC_APBENR2_TIM1EN;
+
+  pwm->tim_typedef->EGR &= ~TIM_EGR_UG;
+  pwm->tim_typedef->CR1 &= ~TIM_CR1_CEN;
+  pwm->tim_typedef->CCER = 0;
+
+
+  pwm->tim_typedef->CCER |= ((invert_neg << 3) | TIM_CCER_CC1NE | (invert_pos << 1) | TIM_CCER_CC1E) << (4 * channel);
+
+  TIM1->CCMR1 |= TIM_CCMR1_OC1PE | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1; break;
+  TIM1->CCMR1 |= TIM_CCMR1_OC2PE | TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1; break;
+  TIM1->CCMR2 |= TIM_CCMR2_OC3PE | TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1; break;
 
   while(1)
   {
-    //USART1->TDR = send;
-    //send++;
-    //delay_ms(200);
-    __WFI();
+    __NOP();
   }
 }
-
-
-void USART1_IRQHandler(void)
-{
-  if(USART1->ISR & USART_ISR_RXNE_RXFNE)
-  {
-    uint8_t var = (uint8_t)(USART1->RDR);
-
-    if(var >= 'a' && var <= 'z')
-    {
-      var += 3;
-      if(var > 'z')
-        var -= ('z' - 'a' + 1);
-      USART1->TDR = var;
-    }
-  }
-}
-
-
 
 
