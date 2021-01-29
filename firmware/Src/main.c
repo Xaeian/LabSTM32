@@ -6,60 +6,64 @@
 #include "stm32g0xx.h"
 #define delay_ms(ms) for(int i = 3203*ms; i; i--) __NOP()
 
+uint16_t volatile adc_output;
+uint8_t volatile adc_flag;
 
-#define AUTO_RELOAD 1000
-
-int32_t pwm_val(uint8_t *dir, int32_t *val, int32_t inc)
+void adc_start()
 {
-  if(!*dir) {
-    *val += inc;
-    if(*val >= AUTO_RELOAD) { *val = AUTO_RELOAD; *dir ^= 1; }
-  }
-  else {
-    *val -= inc;
-    if(*val <= 0) { *val = 0; *dir ^= 1; }
-  }
-  return *val;
+  ADC1->IER |= ADC_IER_EOCIE;
+  ADC1->CR |= ADC_CR_ADSTART;
 }
 
 int main(void)
 {
-  RCC->IOPENR |= RCC_IOPSMENR_GPIOASMEN;
-  GPIOA->MODER &= ~(GPIO_MODER_MODE8_Msk | GPIO_MODER_MODE9_Msk | GPIO_MODER_MODE10_Msk);
-  GPIOA->MODER |= (2 << GPIO_MODER_MODE8_Pos) | (2 << GPIO_MODER_MODE9_Pos) | (2 << GPIO_MODER_MODE10_Pos);
+  RCC->IOPENR |= RCC_IOPSMENR_GPIOBSMEN;
+  RCC->APBENR2 |= RCC_APBENR2_ADCEN;
 
-  GPIOA->AFR[1] &= ~(GPIO_AFRH_AFSEL8_Msk | GPIO_AFRH_AFSEL9_Msk | GPIO_AFRH_AFSEL10_Msk);
-  GPIOA->AFR[1] |= (2 << GPIO_AFRH_AFSEL8_Pos) |(2 << GPIO_AFRH_AFSEL9_Pos) | (2 << GPIO_AFRH_AFSEL10_Pos);
+  ADC1->CR |= ADC_CR_ADVREGEN; // ADC Voltage Regulator Enable
+  for(uint32_t i = 0; i < SystemCoreClock / 500000; i++) __DSB();
 
-  RCC->APBENR2 |= RCC_APBENR2_TIM1EN;
+  ADC1->CR &= ~ADC_CR_ADEN;
+  ADC1->CFGR1 &= ~ADC_CFGR1_DMAEN;
+  ADC1->CR |= ADC_CR_ADCAL; // Calibration
+  while(!(ADC1->ISR & ADC_ISR_EOCAL)) __DSB();
+  ADC1->ISR |= ADC_ISR_EOCAL;
 
-  TIM1->CCER |= TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E;
+  ADC->CCR |= (7 << ADC_CCR_PRESC_Pos);
+  ADC1->CHSELR = (1 << 9); // Active channel ADC_IN9 - PB1
 
-  TIM1->CCMR1 |= TIM_CCMR1_OC1PE | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
-  TIM1->CCMR1 |= TIM_CCMR1_OC2PE | TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1;
-  TIM1->CCMR2 |= TIM_CCMR2_OC3PE | TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1;
+  NVIC_EnableIRQ(ADC1_COMP_IRQn);
+  NVIC_SetPriority(ADC1_COMP_IRQn, 3);
 
-  TIM1->PSC = 159;
-  TIM1->ARR = AUTO_RELOAD;
+  ADC1->CFGR2 = (4 << ADC_CFGR2_OVSS_Pos) | (7 << ADC_CFGR2_OVSR_Pos) | ADC_CFGR2_OVSE;
+  ADC1->SMPR = (7 << ADC_SMPR_SMP1_Pos);
 
-  TIM1->CR1 = TIM_CR1_ARPE;
+  do {
+    ADC1->CR |= ADC_CR_ADEN;
+  } while((ADC1->ISR & ADC_ISR_ADRDY) == 0);
 
-  TIM1->DIER &= ~TIM_DIER_UIE;
-  TIM1->BDTR |= TIM_BDTR_MOE;
-  TIM1->EGR |= TIM_EGR_UG;
-  TIM1->CR1 |= TIM_CR1_CEN;
-
-  uint8_t dir[3] = { 0, 0, 0 };
-  int32_t val[3] = { 0, 0, 0 };
-
+  adc_start();
 
   while(1)
   {
-    TIM1->CCR1 = (uint32_t)pwm_val(&dir[0], &val[0], 2);
-    TIM1->CCR2 = (uint32_t)pwm_val(&dir[1], &val[1], 3);
-    TIM1->CCR3 = (uint32_t)pwm_val(&dir[2], &val[2], 5);
-    delay_ms(1);
+    if(adc_flag)
+    {
+      adc_flag = 0;
+      delay_ms(10);
+      adc_start();
+    }
+    delay_ms(10);
   }
 }
 
+
+void ADC_COMP_IRQHandler(void)
+{
+  if(ADC1->ISR & ADC_ISR_EOC)
+  {
+    ADC1->ISR |= ADC_ISR_EOC;
+    adc_output = ADC1->DR;
+    adc_flag = 1;
+  }
+}
 
