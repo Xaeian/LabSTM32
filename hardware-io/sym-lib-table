@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name Shield-IO-rescue)(type Legacy)(uri ${KIPRJMOD}/Shield-IO-rescue.lib)(options "")(descr ""))
+)

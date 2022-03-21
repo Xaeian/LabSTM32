@@ -1,0 +1,7 @@
+Build/
+Debug/
+*.elf
+*.elf.launch
+*.launch
+.settings/
+.cortex-debug*
