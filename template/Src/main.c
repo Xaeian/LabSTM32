@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "stm32g0xx.h"
 
-#define delay_ms(ms) for(int __i = 3203*ms; __i; __i--) __NOP()
+#define delay_ms(ms) for(int _i = 3203  *ms; _i; _i--) __NOP()
 
 int main(void)
 {
