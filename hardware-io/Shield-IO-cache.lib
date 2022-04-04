@@ -13,9 +13,6 @@ F5 "61301621121" 0 -550 30 H I C CNN "Code"
 F6 "Würth Elektronik" 0 -600 30 H I C CNN "Supplier"
 F7 "2.54mm;" 0 -650 30 H I C CNN "Description"
 F8 "1" 0 -700 30 H I C CNN "Count"
-$FPLIST
- *PH.*
-$ENDFPLIST
 DRAW
 C -50 -350 14 0 1 0 F
 C -50 -250 14 0 1 0 F
@@ -82,9 +79,6 @@ F5 "-" 0 -700 30 H I C CNN "Code"
 F6 "Maritex" 0 -750 30 H I C CNN "Supplier"
 F7 "-" 0 -800 30 H I C CNN "Description"
 F8 "-" 0 -850 30 H I C CNN "Count"
-$FPLIST
- *PH.*
-$ENDFPLIST
 DRAW
 C -50 -450 14 0 1 0 F
 C -50 -350 14 0 1 0 F
@@ -161,9 +155,6 @@ F5 "-" 0 -1150 30 H I C CNN "Code"
 F6 "Maritex" 0 -1200 30 H I C CNN "Supplier"
 F7 "-" 0 -1250 30 H I C CNN "Description"
 F8 "-" 0 -1300 30 H I C CNN "Count"
-$FPLIST
- *PH.*
-$ENDFPLIST
 DRAW
 C -50 -900 14 0 1 0 F
 C -50 -900 14 0 1 0 F
@@ -421,9 +412,6 @@ F4 "Würth Elektronik" 0 -200 30 H I C CNN "Manufacturer"
 F5 "885012006063" 0 -250 30 H I C CNN "Code"
 F6 "Würth Elektronik" 0 -300 30 H I C CNN "Supplier"
 F7 "50V; NP0; ±5%;" 0 -350 30 H I C CNN "Description"
-$FPLIST
- *C.*
-$ENDFPLIST
 DRAW
 S -25 55 -15 -55 0 1 0 F
 S 15 -55 25 55 0 1 0 F
@@ -443,9 +431,6 @@ F4 "Royal Ohm" 0 -350 30 H I C CNN "Manufacturer"
 F5 "4D03WGJ0102T5E" 0 -400 30 H I C CNN "Code"
 F6 "TME" 0 -450 30 H I C CNN "Supplier"
 F7 "±5%;" 0 -500 30 H I C CNN "Description"
-$FPLIST
- *R.*
-$ENDFPLIST
 DRAW
 S -60 -120 60 -180 0 1 0 N
 S -60 -20 60 -80 0 1 0 N
@@ -646,13 +631,9 @@ F1 "Transistor_Bipolar-2NPN-2R" 60 -30 30 H V L CNN
 F2 "" -20 0 40 H I C CNN
 F3 "-" 0 -400 30 H I C CNN
 F4 "Infineon Technologies" 0 -450 30 H I C CNN "Manufacturer"
-F5 "BCR523UE6327" 0 -500 30 H I C CNN "Code"
+F5 "BCR108SH6327" 0 -500 30 H I C CNN "Code"
 F6 "TME" 0 -550 30 H I C CNN "Supplier"
-F7 "50V; 500mA; 330mW; Reb=10k; Rb=1k;" 0 -600 30 H I C CNN "Description"
-$FPLIST
- *SOT23-3*
- *T.*
-$ENDFPLIST
+F7 "50V; 100mA; 200mW; Reb=47k; Rb=2.2k;" 0 -600 30 H I C CNN "Description"
 DRAW
 C -40 0 5 0 1 0 N
 C 50 -170 5 0 1 0 N
