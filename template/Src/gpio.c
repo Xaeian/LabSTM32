@@ -11,6 +11,7 @@ void GPIO_Init(GPIO_t *gpio)
     case (uint32_t)GPIOD: RCC->IOPENR |= RCC_IOPENR_GPIODEN; break;
     case (uint32_t)GPIOF: RCC->IOPENR |= RCC_IOPENR_GPIOFEN; break;
   }
+  GPIO_Rst(gpio);
   gpio->gpio_typedef->MODER &= ~(0b11 << (2 * gpio->pin_no));
   gpio->gpio_typedef->MODER |= gpio->mode << (2 * gpio->pin_no);
   gpio->gpio_typedef->PUPDR &= ~(0b11 << (2 * gpio->pin_no));
@@ -21,12 +22,14 @@ void GPIO_Init(GPIO_t *gpio)
 
 void GPIO_Set(GPIO_t *gpio)
 {
-  gpio->gpio_typedef->BSRR = (1 << gpio->pin_no);
+  if(gpio->revers) gpio->gpio_typedef->BSRR = (1 << (16 + gpio->pin_no));
+  else gpio->gpio_typedef->BSRR = (1 << gpio->pin_no);
 }
 
 void GPIO_Rst(GPIO_t *gpio)
 {
-  gpio->gpio_typedef->BSRR = (1 << (16 + gpio->pin_no));
+  if(gpio->revers) gpio->gpio_typedef->BSRR = (1 << gpio->pin_no);
+  else gpio->gpio_typedef->BSRR = (1 << (16 + gpio->pin_no));
 }
 
 void GPIO_Tgl(GPIO_t *gpio)
