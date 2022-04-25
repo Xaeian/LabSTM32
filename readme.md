@@ -108,7 +108,7 @@ while(1)
 
 ## Shields [➥](#-content)
 
-Powyższe kody będą działać na _"gołej"_ płytce nucleo. Dalej będą wykorzystywane **shield**'y, czyli nakładki, które można połączyć na kanapkę z naszym nucleo
+Powyższe kody będą działać na _"gołej"_ płytce nucleo. Dalej będą wykorzystywane **shield**'y, czyli nakładki, które można połączyć na kanapkę z naszą płytką bazową
 
 | Nakładka Input - Output   | Nakładka Measurement       |
 | ------------------------- | -------------------------- |
