@@ -5,6 +5,8 @@
 #include "gpio.h"
 #include "delay.h"
 
+//---------------------------------------------------------------------------------------------------------------------
+
 GPIO_t pwm1_gpio = { .gpio_typedef = GPIOA, .pin_no = 8, .mode = GPIO_Mode_Alternate, .alternate = 2 };
 GPIO_t pwm2_gpio = { .gpio_typedef = GPIOA, .pin_no = 9, .mode = GPIO_Mode_Alternate, .alternate = 2 };
 GPIO_t pwm3_gpio = { .gpio_typedef = GPIOA, .pin_no = 10, .mode = GPIO_Mode_Alternate, .alternate = 2 };
@@ -32,7 +34,7 @@ void PWM_Init(void)
   TIM1->CR1 |= TIM_CR1_CEN; // TIM enable
 }
 
-uint8_t vaule;
+//---------------------------------------------------------------------------------------------------------------------
 
 int16_t diff(int16_t value, uint8_t a, uint8_t b)
 {
@@ -71,23 +73,10 @@ int main(void)
   }
 }
 
-void Blink(void)
-{
-	GPIOC->ODR ^= (1 << 5);
-	TIM6->ARR += 5;
-	if(TIM6->ARR > 200) TIM6->ARR = 20;
-}
-
-
-
+//---------------------------------------------------------------------------------------------------------------------
 
 void SysTick_Handler(void)
 {
-//  x++;
-//  if(x > 2) {
-//    x = 0;
-//	GPIOC->ODR ^= (1 << 5);
-//  }
-
+  // ...
 }
-
+//---------------------------------------------------------------------------------------------------------------------

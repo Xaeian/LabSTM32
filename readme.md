@@ -1,11 +1,120 @@
-Gdzie można kupić płytkę **NUCLEO**?
+## ⚓ Content
 
-- [STM32G070RB Kamami](https://kamami.pl/stm-nucleo-64/573439-nucleo-g070rb-zestaw-startowy-z-mikrokontrolerem-z-rodziny-stm32-stm32g070rb.html?search_query=stm32g0+nucleo&results=4)
-- [STM32G071B1 Kamami](https://kamami.pl/stm-nucleo-64/584254-nucleo-g0b1re-zestaw-startowy-z-mikrokontrolerem-z-rodziny-stm32-stm32g0b1re.html?search_query=stm32g0+nucleo&results=4)
-- [STM32G071RB Mouser](https://www.mouser.pl/ProductDetail/STMicroelectronics/NUCLEO-G071RB?qs=PqoDHHvF64%2FiIo1nQ3ZWtw%3D%3D)
-- [STM32G070RB Farnell](https://www.mouser.pl/ProductDetail/STMicroelectronics/NUCLEO-G071RB?qs=PqoDHHvF64%2FiIo1nQ3ZWtw%3D%3D)
+- [IDE, Dioda, Przycisk](#ide-dioda-przycisk-)
+- [Liczniki](#liczniki-)
+- [Biblioteka GPIO](#biblioteka-gpio-)
+- [Biblioteka DELAY](#biblioteka-delay-)
 
-## 1. Świecąca linijka LED
+# IDE, Dioda, Przycisk [➥](#-content)
+
+Moim zdaniem w nauce programowania, _potem w sumie też_, ważne jest żeby osiągać jakieś efekty szybko. Praca z systemami wbudowanymi posiada niekończące się zagadanienia poboczne, jak konfiguracja środowiska, hardware itd. Zatem pominiemy to wszystko, ściągniemy środowisko [**STM32CubeIDE**](https://www.st.com/en/development-tools/stm32cubeide.html), dostarczane **ST**, klonujemy repozutorium **nucleo** i dodajemy [template](./template) jako projekt:
+
+Project Exploler `⟶` Right click `⟶` **Import** `⟶` Existing Project into Workspace
+
+```cpp
+int main(void)
+{
+  RCC->IOPENR |= (1 << 0);
+
+  GPIOA->MODER &= ~(3 << (2 * 5));
+  GPIOA->MODER |= (1 << (2 * 5));
+
+  while(1)
+  {
+    GPIOA->ODR |= (1 << 5);
+    delay_ms(200);
+    GPIOA->ODR &= ~(1 << 5);
+    delay_ms(200);
+  }
+}
+```
+
+W nowszych procesorach, które dodatkowo są zoptymalizowane pod kontem aplikacji energooszczędnych wszystkie peryferia trzeba włączyć. Tak samo jest tutaj. Na początku programu wpisujemy 1 do rejestru [`RCC->IOPENR`](./docs/datasheet.pdf#page=147) na pozycji 0. Tą operacją doprowadzamy sygnał zegarowy do peryferium **GPIOA**.
+
+W kolejnych liniach ustawiamy wyprowadzenie **PA5** na wyjście przez ustawienie wartości `01` do odpowiedniego pola rejestru [`GPIOA->MODER`](./docs/datasheet.pdf#page=205).
+
+W pętli głównej na przemian ustawiamy i kasujemy bit z rejestru [`GPIOA->ODR`](./docs/datasheet.pdf#page=207). Te operacje na przemian ustawiają na wyjściu stan wysoki i niski, co skutkuje zapalaniem i gaszeniem diody. Oczywiście efekt ten jest zauważalny dzięki funkcji delay_ms.
+
+```cpp
+#define delay_ms(ms) for(int __i = 1592 * ms; __i; __i--)
+```
+
+W procesorach STM32 nie mamy wbudowanej funkcji `delay_ms` tak jak to działało w mikrokontrolerach **AVR**. Po prostu nie ma takeij potrzeby, ponieważ w procesorze Atmega328P mieliśmy 3 timery z czego w **Arduino** jeden był wykorzystywany do _nie wiem czego_. Procesory **STM32** z rodziny **G0** mamy do dyspozycji 12 timerów (nie licząc watchdoga) i jeden z nich możemy wykorzystać w celu oprogramowania funkcji `delay_ms`. Takie rozwiązanie będzie znacznie bardziej dokładne i precyzyjne. Nie mniej takie rozwiązanie będzie wystarczające w wielu przypadkach.
+
+Na tym etapie warto usunąć linijki zawierające funkcje `delay_ms` oraz odpalić kod w debugerze 🐞.
+
+Wracając do samego kodu. W przypadku niektórych rejestrów dobrą praktyką może okazać się zastąpienie przesunięć bitowych definicjami, które są zawartę w plikach nagówkowych dostarczomchy przez ST.
+
+```cpp
+int main(void)
+{
+  RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
+
+  GPIOA->MODER &= ~GPIO_MODER_MODE5;
+  GPIOA->MODER |= GPIO_MODER_MODE5_0;
+
+  while(1)
+  {
+    GPIOA->ODR |= GPIO_ODR_OD5;
+    delay_ms(200);
+    GPIOA->ODR &= ~GPIO_ODR_OD5;
+    delay_ms(200);
+  }
+}
+```
+
+Oczywiście operacje migania można zrealizować prościej, za pomocą operacji XOR
+
+```cpp
+while(1)
+{
+  GPIOA->ODR ^= GPIO_ODR_OD5;
+  delay_ms(200);
+}
+```
+
+Najlepszym jednak sposobem jest na zmianę stanu wyjścia jest skorzystanie z rejestru [`GPIOA->BSRR`](./docs/datasheet.pdf#page=208). Pozwala on _atomowo_ wstawić do rejestru `GPIOA->ODR` 1 lub 0. Instrukcja `GPIOA->ODR |= GPIO_ODR_OD5` w praktyce wykonuje 3 operacje.
+
+- Pobranie wartości z rejestru `GPIOA->ODR`
+- Wykonanie sumy bitowej z wartością `GPIO_ODR_OD5`
+- Wpisanie do rejestru `GPIOA->ODR` wyniku operacji
+
+W bardziej skomplikowanych aplikacjach na skutek przerwania jakaś instrukcja mogłaby się wcisnąć w środek naszej operacji, co może wprowadzać komplikacje. Korzystając z rejestru `GPIOA->BSRR` procesor wykonuje jedną operacją, co czynie tą operację niepodzielną - _atomową_.
+
+```cpp
+while(1)
+{
+  GPIOA->BSRR |= GPIO_BSRR_BS5;
+  delay_ms(200);
+  GPIOA->BSRR |= GPIO_BSRR_BR5;
+  delay_ms(200);
+}
+```
+
+Migająca dioda już za nami - teraz pora na przycisk. Zanim jednak zabierzemy się za jego konfigurację warto przejrzeć się wszystkim [konfiguracją **GPIO**](./docs/datasheet.pdf#page=197)
+
+Przycisk na płytce **nucleo** jest od razu podciągnięty do zasilania _(pull-up)_, więc wystarczy ustawić na jako wejście i odczytywać jego stan. Niech nasz program świeci diodą w przypadku wciśnięcia przycisku, a w przeciwnym razie niech dioda pozostanie zgaszona.
+
+```cpp
+RCC->IOPENR |= RCC_IOPENR_GPIOCEN;
+GPIOC->MODER &= ~GPIO_MODER_MODE13;
+
+while(1)
+{
+  if(!(GPIOC->IDR & (1 << 13))) GPIOA->BSRR |= GPIO_BSRR_BS5;
+  else GPIOA->BSRR |= GPIO_BSRR_BR5;
+}
+```
+
+## Shields
+
+Powyższe kody będą działać na _"gołej"_ płytce nucleo. Dalej będą wykorzystywane **shield**'y, czyli nakładki, które można połączyć na kanapkę z naszym nucleo
+
+| Nakładka Input - Output   | Nakładka Measurement       |
+| ------------------------- | -------------------------- |
+| ![](images/shield-io.png) | ![](images/shield-msm.png) |
+
+## Świecąca linijka LED
 
 Wyprowadzenia `PC0`-`PC15` są podłączone do kolejnych diod.
 W programie jedynka z rejestru `GPIOC->ODR` jest przesuwana na lewo (`<<`).
@@ -66,9 +175,9 @@ int main(void)
 }
 ```
 
-# Timery
+# Liczniki [➥](#-content)
 
-Ustaliliśmy, już że nasz procek jest owocem pracy dwóch firm. ST Microelectronic i ARM. Zatem nie powinn
+Ustaliliśmy, już że nasz procek jest owocem pracy dwóch firm. ST Microelectronic i ARM. Zatem... _TODO_
 
 ## Licznik SysTick
 
@@ -163,7 +272,7 @@ void SysTick_Handler(void)
 }
 ```
 
-# Biblioteka GPIO
+# Biblioteka GPIO [➥](#-content)
 
 W niemal każdym projekckie gdziej jest mikrokontroler, wykorzystuje się standardowe wyjścia/wejścia **GPIO**. Zatem miło jest mieć do tego bibliotekę, która na dłuższą metę usprawni naszą pracę.
 
@@ -186,7 +295,7 @@ Nasza biblioteka załącz inne bibioteki:
 #include "stm32g0xx.h"
 ```
 
-Utartą konwencją jest, że biblioteki standardowe dostępne w języku **c** umieszczamy pomiędzy `<...>` 
+Utartą konwencją jest, że biblioteki standardowe dostępne w języku **c** umieszczamy pomiędzy `<...>`
 natomiast dodatkowe między `"..."`. Załączamy jedynie pliki `.h`.
 
 Nasza biblioteka będzie stanowić interfejs pomiędzy hadware'm, a programistą aplikacyjnym _(który nie koniecznie musi wiedzieć, co w rejestrach piszczy)_. Zatem warto postarać się, aby nasz interfejs bym jak najbardziej przyjazny użytkownikowi _(user-frendly)_, ale nie można do końca zapominać o strukturze rejestrów, ponieważ może to znacznie utrudnić nam pisanie takiej biblioteki. Warto stosować zmienne wyliczeniowe `enum`, które mogą stanowić most pomiędzy sprzętem, a użytkownikiem.
@@ -290,9 +399,9 @@ int main(void)
 
 Taki kod, nawet bez komentarzy, jest znacznie prostrzy do ogarnięcia niż odnosząc się bezpośrednio do rejestrów. Ale dyskusja czy jest ono słuszne to już temat na inną opowieść ;)
 
-Warto pamiętać, że dla struktury zadeklarowanej globalnie _(nie w funkcji)_ wszystkie niezadeklarowane  zmienne będą przyjmowały wartość `0`, więc wartość pola `mode` zmiennej `GPIO_t app_sw` jest ustawiona na `GPIO_Mode_Input`.
+Warto pamiętać, że dla struktury zadeklarowanej globalnie _(nie w funkcji)_ wszystkie niezadeklarowane zmienne będą przyjmowały wartość `0`, więc wartość pola `mode` zmiennej `GPIO_t app_sw` jest ustawiona na `GPIO_Mode_Input`.
 
-# Biblioteka DELAY
+# Biblioteka DELAY [➥](#-content)
 
 Pisząc proste programy jednowątkowe wygodnie wyposażyć się w funkcję `delay(time)`, która spowoduje odczekanie czasu `time`, ponieważ pracując na **STM**'ach nie dostajemy gotowych funkcji jak w przypadku mikrokontrolerów **AVR**. Aby uzyskać odpowiednią precyzję, wykorzystamy sprzętowy **TIM**'er. TIM'erów mamy do dyspozycji całkiem sporo, ale na początek damy do wyboru liczniki `6` i `7`. W zależności od wybranej opcji zostaną wykorzystane inne struktury, definicje i funkcje:
 
@@ -316,7 +425,7 @@ Dobrą praktyką jest ustawienie domyślnego timera, tak na wypadek, gdyby progr
 #endif
 ```
 
-Przydałoby się jednak obsłużyć sytuacje, gdy nie chcemy _"marnować"_ sprzętowego  licznika, a poznana już niedokładna metoda czekania zadanego czasu jest wystarczająca dla pisanej aplikacji.
+Przydałoby się jednak obsłużyć sytuacje, gdy nie chcemy _"marnować"_ sprzętowego licznika, a poznana już niedokładna metoda czekania zadanego czasu jest wystarczająca dla pisanej aplikacji.
 
 ```cpp
 #ifndef DELAY_HARDWARE
@@ -325,13 +434,13 @@ Przydałoby się jednak obsłużyć sytuacje, gdy nie chcemy _"marnować"_ sprz�
 
 #if(DELAY_HARDWARE)
   // ...
-  // hardware delay defines 
+  // hardware delay defines
   // ...
   void delay_init(void);
   void delay_ms(uint16_t ms);
   void delay_us(uint16_t us);
 #else
-  #define delay_ms(ms) for(int _i = 1592 * ms; _i; _i--);
+  #define delay_ms(ms) for(int _i = 1592 * ms; _i; _i--)
 #endif
 
 #endif

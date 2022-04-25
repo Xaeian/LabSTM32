@@ -30,7 +30,7 @@
   void delay_ms(uint16_t ms);
   void delay_us(uint16_t us);
 #else
-  #define delay_ms(ms) for(int _i = 1592 * ms; _i; _i--);
+  #define delay_ms(ms) for(int _i = 1592 * ms; _i; _i--)
 #endif
 
 //---------------------------------------------------------------------------------------------------------------------
