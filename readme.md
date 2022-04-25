@@ -106,7 +106,7 @@ while(1)
 }
 ```
 
-## Shields
+## Shields [➥](#-content)
 
 Powyższe kody będą działać na _"gołej"_ płytce nucleo. Dalej będą wykorzystywane **shield**'y, czyli nakładki, które można połączyć na kanapkę z naszym nucleo
 
@@ -114,7 +114,7 @@ Powyższe kody będą działać na _"gołej"_ płytce nucleo. Dalej będą wykor
 | ------------------------- | -------------------------- |
 | ![](images/shield-io.png) | ![](images/shield-msm.png) |
 
-## Świecąca linijka LED
+## Świecąca linijka LED [➥](#-content)
 
 Wyprowadzenia `PC0`-`PC15` są podłączone do kolejnych diod.
 W programie jedynka z rejestru `GPIOC->ODR` jest przesuwana na lewo (`<<`).
@@ -144,7 +144,7 @@ int main(void)
 }
 ```
 
-## Przycisk i dioda
+## Przycisk i dioda [➥](#-content)
 
 Gdy przycisk `PA13` jest wciśnięty dioda LED `PC5` świeci.
 W przeciwnym wypadku dioda LED pozostaje zgaszona
@@ -179,7 +179,7 @@ int main(void)
 
 Ustaliliśmy, już że nasz procek jest owocem pracy dwóch firm. ST Microelectronic i ARM. Zatem... _TODO_
 
-## Licznik SysTick
+## Licznik SysTick [➥](#-content)
 
 SysTick jest bardzo prostym licznikim 24-bitowym licznikiem, który jedyne co może robić to zliczać w górę takt sygnału zegarowego. Podczas konfiguracji `SysTick_Config` określamy do jakiej wartości zliczanie ma się odbywać. Gdy to nastąpi wartość rejestru zliczającego jest zerowana, a rdzeń przestaje wykonywać bierzące zadanie i przechodzi do funkcji `SysTick_Handler`. Taką zagrywkę ze strony mikrokontrolera nazwyamy przerwaniem, a funkcję jego obsługą.
 
@@ -214,7 +214,7 @@ void SysTick_Handler(void)
 }
 ```
 
-## Licznik SysTick
+## Liczniki TIMx [➥](#-content)
 
 ```cpp
 int main(void)
@@ -342,7 +342,7 @@ bool GPIO_In(GPIO_t *gpio);
 
 Zawartość tej biblioteki _(oczywiście z obsługą funkcji zawartą w pliku `.c`)_ stanowi pseudo-**klasę**. Powyższe funkcje będą wykonywane zawsze na rzecz stworzonego wcześniej _"**obiektu**"_, zatem na standardy programowania w języku `.c`, możemy śmiało je nazywać **metodami**.
 
-## Używanie biblioteki GPIO
+## Używanie biblioteki GPIO [➥](#-content)
 
 Oczywiste jest, że aby korzystać z naszej biblioteki musimy ją dołączyć. O ile będzie ona umieszczona w tym samym folderze, co plik ją wykorzystujący, wystarczy na początku dodać `#include "gpio.h"`.
 
