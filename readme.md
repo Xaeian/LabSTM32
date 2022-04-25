@@ -13,7 +13,7 @@ Gdy dochodzi do diody `PC15` kierunek zmienia się na prawo (`>>`).
 Całość sprawia wrażenie, że święcący punk przesuwa się na lewo i prawo.
 
 ```cpp
-#define delay_ms(ms) for(int _i = 3203 * ms; _i; _i--) __NOP()
+#define delay_ms(ms) for(int _i = 1592 * ms; _i; _i--);
 
 bool state = false;
 
@@ -231,7 +231,7 @@ void GPIO_Tgl(GPIO_t *gpio);
 bool GPIO_In(GPIO_t *gpio);
 ```
 
-Zawartość tej biblioteki _(oczywiście z obsługą funkcji zawartą w pliku `.c`)_ stanowi pseudo-**klasę**. Powyższe funkcje będą wykonywane zawsze na rzecz stworzonego wcześniej "**obiektu**", zatem na standardy programowania w języku `.c`, możemy śmiało je nazywać **metodami**.
+Zawartość tej biblioteki _(oczywiście z obsługą funkcji zawartą w pliku `.c`)_ stanowi pseudo-**klasę**. Powyższe funkcje będą wykonywane zawsze na rzecz stworzonego wcześniej _"**obiektu**"_, zatem na standardy programowania w języku `.c`, możemy śmiało je nazywać **metodami**.
 
 ## Używanie biblioteki GPIO
 
@@ -291,3 +291,50 @@ int main(void)
 Taki kod, nawet bez komentarzy, jest znacznie prostrzy do ogarnięcia niż odnosząc się bezpośrednio do rejestrów. Ale dyskusja czy jest ono słuszne to już temat na inną opowieść ;)
 
 Warto pamiętać, że dla struktury zadeklarowanej globalnie _(nie w funkcji)_ wszystkie niezadeklarowane  zmienne będą przyjmowały wartość `0`, więc wartość pola `mode` zmiennej `GPIO_t app_sw` jest ustawiona na `GPIO_Mode_Input`.
+
+# Biblioteka DELAY
+
+Pisząc proste programy jednowątkowe wygodnie wyposażyć się w funkcję `delay(time)`, która spowoduje odczekanie czasu `time`, ponieważ pracując na **STM**'ach nie dostajemy gotowych funkcji jak w przypadku mikrokontrolerów **AVR**. Aby uzyskać odpowiednią precyzję, wykorzystamy sprzętowy **TIM**'er. TIM'erów mamy do dyspozycji całkiem sporo, ale na początek damy do wyboru liczniki `6` i `7`. W zależności od wybranej opcji zostaną wykorzystane inne struktury, definicje i funkcje:
+
+```cpp
+#if(DELAY_TIM == 6)
+  #define _DELAY_TIM TIM6
+  #define _DELAY_HANDLER TIM6_DAC_LPTIM1_IRQHandler
+  #define _DELAY_N TIM6_DAC_LPTIM1_IRQn
+#elif(DELAY_TIM == 7)
+  #define _DELAY_TIM TIM7
+  #define _DELAY_HANDLER TIM7_LPTIM2_IRQHandler
+  #define _DELAY_N TIM7_LPTIM2_IRQn
+#endif
+```
+
+Dobrą praktyką jest ustawienie domyślnego timera, tak na wypadek, gdyby programista nie miał ochoty się tym zajmować. Wówczas, gdy tego nie zrobi zmienna `DELAY_TIM` zostanie ustawiona na `6`.
+
+```cpp
+#ifndef DELAY_TIM
+  #define DELAY_TIM 6
+#endif
+```
+
+Przydałoby się jednak obsłużyć sytuacje, gdy nie chcemy _"marnować"_ sprzętowego  licznika, a poznana już niedokładna metoda czekania zadanego czasu jest wystarczająca dla pisanej aplikacji.
+
+```cpp
+#ifndef DELAY_HARDWARE
+  #define DELAY_HARDWARE 1
+#endif
+
+#if(DELAY_HARDWARE)
+  // ...
+  // hardware delay defines 
+  // ...
+  void delay_init(void);
+  void delay_ms(uint16_t ms);
+  void delay_us(uint16_t us);
+#else
+  #define delay_ms(ms) for(int _i = 1592 * ms; _i; _i--);
+#endif
+
+#endif
+```
+
+Trzeba jednak pamiętać, że TIM'ery wymagają inicjacji, stąd funkcja `delay_init`. Obsługa funkcji jak wiadomo w [pliku `delay.c`](./template/Src/delay.c)
