@@ -16,6 +16,11 @@ void GPIO_Init(GPIO_t *gpio)
   gpio->gpio_typedef->MODER |= gpio->mode << (2 * gpio->pin_no);
   gpio->gpio_typedef->PUPDR &= ~(0b11 << (2 * gpio->pin_no));
   gpio->gpio_typedef->PUPDR |= gpio->pull << (2 * gpio->pin_no);
+
+  uint8_t reg = gpio->pin_no / 8;
+  uint8_t move = gpio->pin_no % 8;
+  gpio->gpio_typedef->AFR[reg] &= ~(0b1111 << (4 * move));
+  gpio->gpio_typedef->AFR[reg] |= (gpio->alternate << (4 * move));
 }
 
 //---------------------------------------------------------

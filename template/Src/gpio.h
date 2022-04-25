@@ -26,6 +26,7 @@ typedef struct {
   GPIO_Mode_e mode;
   GPIO_Pull_e pull;
   bool revers;
+  uint8_t alternate;
 } GPIO_t;
 
 //---------------------------------------------------------

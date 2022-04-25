@@ -162,3 +162,132 @@ void SysTick_Handler(void)
 
 }
 ```
+
+# Biblioteka GPIO
+
+W niemal każdym projekckie gdziej jest mikrokontroler, wykorzystuje się standardowe wyjścia/wejścia **GPIO**. Zatem miło jest mieć do tego bibliotekę, która na dłuższą metę usprawni naszą pracę.
+
+Gdy tworzy się większe projekty, szybko można dojść do wniosku że pojedynczy plik `main.c` to zdecydowanie za mało. W tym celu dołaczamy dodatkowe inne pliki. W języku `c` zwykle robi się to w parach załączając pliki z rozszerzeniem `.c` _(od języka **c**)_ i `.h` _(od **header**)_. Taką parę możemy nazwać biblioteką. W pliku nagłówkowym `.h` dobrze umieścić poniższą składnie:
+
+```cpp
+#ifndef GPIO_H_
+#define GPIO_H_
+//...
+#endif
+```
+
+Dzięki niej, gdy będziemy wykorzystywali bibliotekę wielokrotnie, zostanie ona dodana tylko jeden raz. Analizując... Gdy nie zdefiniowano zmiennej preprocesora `#ifndef GPIO_H_`, to zdefiniuj zmienną `#define GPIO_H_` i załącz zawartość `...`. W językach "wyższo-poziomowych" tego typu mechanizm jest zaszyty, więc nie musimu przejmować się wielokrotnym załączaniem bibliotek.
+
+Nasza biblioteka załącz inne bibioteki:
+
+```cpp
+#include <stdbool.h>
+#include <stdint.h>
+#include "stm32g0xx.h"
+```
+
+Utartą konwencją jest, że biblioteki standardowe dostępne w języku **c** umieszczamy pomiędzy `<...>` 
+natomiast dodatkowe między `"..."`. Załączamy jedynie pliki `.h`.
+
+Nasza biblioteka będzie stanowić interfejs pomiędzy hadware'm, a programistą aplikacyjnym _(który nie koniecznie musi wiedzieć, co w rejestrach piszczy)_. Zatem warto postarać się, aby nasz interfejs bym jak najbardziej przyjazny użytkownikowi _(user-frendly)_, ale nie można do końca zapominać o strukturze rejestrów, ponieważ może to znacznie utrudnić nam pisanie takiej biblioteki. Warto stosować zmienne wyliczeniowe `enum`, które mogą stanowić most pomiędzy sprzętem, a użytkownikiem.
+
+```cpp
+typedef enum {
+  GPIO_Mode_Input = 0,
+  GPIO_Mode_Output = 1,
+  GPIO_Mode_Alternate = 2,
+  GPIO_Mode_Analog = 3,
+} GPIO_Mode_e;
+
+typedef enum {
+  GPIO_Pull_Floating = 0,
+  GPIO_Pull_PullUp = 1,
+  GPIO_Pull_PullDown = 2
+} GPIO_Pull_e;
+```
+
+Po lewej stronie znajduje się nazwa, która będzie wykorzystywana z wyższego poziomu, a my podczas pisania biblioteki będziemy mieli dostęp do liczby, która kryje się pod tą nazwą. Warto pamiętać, że `enum`'y zajmują tyle miejsca co zmienna typy `int`.
+
+Wszystkie, dostępne dla użytkownika, zmienne dobrze umieścić w jednej strukturze. Jeżeli będziemy wykorzystywali zmienne pomocnicze, warto rozpocząć je od znaku `_`. Będzie stanowiło, to podpowiedź, aby tych zmiennych nie ustawiać.
+
+```cpp
+typedef struct {
+  GPIO_TypeDef *gpio_typedef;
+  uint8_t pin_no;
+  GPIO_Mode_e mode;
+  GPIO_Pull_e pull;
+  bool revers;
+  uint8_t alternate;
+} GPIO_t;
+```
+
+Funkcje, które możemy wykonać z przekazaniem struktury, umieszczamy w [pliku `.c`](./template/Src/gpio.c), który musi mieć dostęp do pliku nagłówkowego, więc musi rozpoczynać się od dołączenia własnego nagłówka `#include "gpio.h"`. W pliku `.h` umieszczamy jedynie nazwy funkcji:
+
+```cpp
+void GPIO_Init(GPIO_t *gpio);
+void GPIO_Set(GPIO_t *gpio);
+void GPIO_Rst(GPIO_t *gpio);
+void GPIO_Tgl(GPIO_t *gpio);
+bool GPIO_In(GPIO_t *gpio);
+```
+
+Zawartość tej biblioteki _(oczywiście z obsługą funkcji zawartą w pliku `.c`)_ stanowi pseudo-**klasę**. Powyższe funkcje będą wykonywane zawsze na rzecz stworzonego wcześniej "**obiektu**", zatem na standardy programowania w języku `.c`, możemy śmiało je nazywać **metodami**.
+
+## Używanie biblioteki GPIO
+
+Oczywiste jest, że aby korzystać z naszej biblioteki musimy ją dołączyć. O ile będzie ona umieszczona w tym samym folderze, co plik ją wykorzystujący, wystarczy na początku dodać `#include "gpio.h"`.
+
+Weźmy nasz program zapalający diodę w przypadku wciśnięcia przycisku:
+
+```cpp
+int main(void)
+{
+  RCC->IOPENR |= RCC_IOPENR_GPIOCEN; // turn on clock signal on GPIOC
+  RCC->IOPENR |= RCC_IOPENR_GPIOAEN; // turn on clock signal on GPIOA
+
+  GPIOC->MODER &= ~(3 << (2 * 5));
+  GPIOC->MODER |= (1 << (2 * 5)); // PC5: output
+
+  GPIOA->MODER &= ~(3 << (2 * 13)); // PA13: input
+  GPIOA->PUPDR |= (1 << (2 * 13)); // PA13: pull-up
+
+  while(1)
+  {
+    if(~GPIOA->IDR & (1 << 13)) // if(switch PA13 is clicked)
+    {
+      GPIOC->BSRR = (1 << 5); // light up PC5
+    }
+    else
+    {
+      GPIOC->BRR = (1 << 5); // put out PC5
+    }
+  }
+}
+```
+
+...i przepiszmy go z wykorzystaniem naszej biblioteki **GPIO**.
+
+```cpp
+GPIO_t app_led = { .gpio_typedef = GPIOC, .pin_no = 8, .mode = GPIO_Mode_Output };
+GPIO_t app_sw = { .gpio_typedef = GPIOA, .pin_no = 12, .pull = GPIO_Pull_PullUp, .revers = true };
+
+int main(void)
+{
+  GPIO_Init(&app_led);
+  GPIO_Init(&app_sw);
+
+  while(1)
+  {
+    if(GPIO_In(&app_sw)) {
+      GPIO_Set(&app_led);
+    }
+    else {
+      GPIO_Rst(&app_led);
+    }
+  }
+}
+```
+
+Taki kod, nawet bez komentarzy, jest znacznie prostrzy do ogarnięcia niż odnosząc się bezpośrednio do rejestrów. Ale dyskusja czy jest ono słuszne to już temat na inną opowieść ;)
+
+Warto pamiętać, że dla struktury zadeklarowanej globalnie _(nie w funkcji)_ wszystkie niezadeklarowane  zmienne będą przyjmowały wartość `0`, więc wartość pola `mode` zmiennej `GPIO_t app_sw` jest ustawiona na `GPIO_Mode_Input`.
