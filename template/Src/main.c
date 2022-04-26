@@ -24,9 +24,9 @@ void PWM_Init(void)
                 TIM_CCMR1_OC1PE | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
   TIM1->CCMR2 = TIM_CCMR2_OC3PE | TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1; // PWM mode
 
-  TIM1->PSC = 160;
+  TIM1->PSC = 159;
   TIM1->ARR = 1000;
-  // T = PSC * ARR / SystemCoreClock
+  // T = (PSC - 1) * ARR / SystemCoreClock
 
   TIM1->DIER &= ~TIM_DIER_UIE;
   TIM1->BDTR |= TIM_BDTR_MOE;

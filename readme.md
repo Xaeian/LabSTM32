@@ -5,6 +5,10 @@
 - [Biblioteka GPIO](#biblioteka-gpio-)
 - [Biblioteka DELAY](#biblioteka-delay-)
 
+Podczas tego kursu będziemy pracowali z procesorem **STM32G071RB** na deb-board'zie **nucleo**. Pracując takimy płytkami dobrze jest mieć pod ręką rysunek z oznaczonymi wyprowadzeniamu. Nie ma za  co ;)
+
+![](images/nucleo.png)
+
 # IDE, Dioda, Przycisk [➥](#-content)
 
 Moim zdaniem w nauce programowania, _potem w sumie też_, ważne jest żeby osiągać jakieś efekty szybko. Praca z systemami wbudowanymi posiada niekończące się zagadanienia poboczne, jak konfiguracja środowiska, hardware itd. Zatem pominiemy to wszystko, ściągniemy środowisko [**STM32CubeIDE**](https://www.st.com/en/development-tools/stm32cubeide.html), dostarczane **ST**, klonujemy repozutorium **nucleo** i dodajemy [template](./template) jako projekt:
@@ -110,9 +114,11 @@ while(1)
 
 Powyższe kody będą działać na _"gołej"_ płytce nucleo. Dalej będą wykorzystywane **shield**'y, czyli nakładki, które można połączyć na kanapkę z naszą płytką bazową
 
-| Nakładka Input - Output   | Nakładka Measurement       |
+| Nakładka Input-Output     | Nakładka Measurement       |
 | ------------------------- | -------------------------- |
 | ![](images/shield-io.png) | ![](images/shield-msm.png) |
+
+Oczywiście bez problemu można pracować bez tych płytek, ale jeśli preferujemy rozpocząć zabawę od _copy-paste_ to polecam. Warto wówczas na płytce nucleo dokonać dwóch drobnych modyfikacji...
 
 ## Świecąca linijka LED [➥](#-content)
 
@@ -177,13 +183,13 @@ int main(void)
 
 # Liczniki [➥](#-content)
 
-Ustaliliśmy, już że nasz procek jest owocem pracy dwóch firm. ST Microelectronic i ARM. Zatem... _TODO_
+Nasz procek procek jest owocem pracy dwóch firm. **ARM**, który zaprojektował rdzeń i sprzedał licencję firmie **ST Microelectronic**, które tworzy peryferia i produkuje układy. Zatem nie powinno nas dziwić, że nie wszystkie informacje znajdziemy w dokumencie Reference Manual. Takim układem jest licznik licznik **SysTick**, którego nazwa sugeruje, żeby wykorzystać go jako zegar systemowy. Pozostałe liczniki ogólnego przeznaczenia określane są w dokumentacji skrótem **TIMx**, gdzie **x** jest numerem timer'a.
 
 ## Licznik SysTick [➥](#-content)
 
-SysTick jest bardzo prostym licznikim 24-bitowym licznikiem, który jedyne co może robić to zliczać w górę takt sygnału zegarowego. Podczas konfiguracji `SysTick_Config` określamy do jakiej wartości zliczanie ma się odbywać. Gdy to nastąpi wartość rejestru zliczającego jest zerowana, a rdzeń przestaje wykonywać bierzące zadanie i przechodzi do funkcji `SysTick_Handler`. Taką zagrywkę ze strony mikrokontrolera nazwyamy przerwaniem, a funkcję jego obsługą.
+SysTick jest bardzo prostym licznikiem 24-bitowym licznikiem, który jedyne co może robić to zliczać w górę takt sygnału zegarowego. Podczas konfiguracji `SysTick_Config` określamy, do jakiej wartości zliczanie ma się odbywać. Gdy to nastąpi, wartość rejestru zliczającego jest zerowana, a rdzeń przestaje wykonywać bieżące zadanie i przechodzi do funkcji `SysTick_Handler`. Taką zagrywkę ze strony mikrokontrolera nazywamy przerwaniem, a funkcję jego obsługą.
 
-W przykładzie licznik ten jest skonfigurowany, aby przerwanie występowało co `100ms`, a w obsłudze przetwania dioda podłączona do `PD5` zmienia stan na przeciwny.
+W przykładzie licznik ten jest skonfigurowany, aby przerwania występowało co `100ms`, a w obsłudze przetwania dioda podłączona do `PD5` zmienia stan na przeciwny.
 
 ```cpp
 int main(void)
@@ -191,7 +197,7 @@ int main(void)
   RCC->IOPENR |= RCC_IOPENR_GPIOCEN;
   GPIOC->MODER &= ~(3 << (2 * 5));
   GPIOC->MODER |= (1 << (2 * 5));
-  SysTick_Config(SystemCoreClock / 10); // 1s / 10 = 100ms
+  SysTick_Config(SystemCoreClock / 10); // T = 1s / 10 = 100ms
   while(1) __NOP();
 }
 
@@ -201,7 +207,7 @@ void SysTick_Handler(void)
 }
 ```
 
-Nasz licznik maksymalniae 2^12
+Jeżeli z jakiegoś powodu rozdzielczość naszego licznika nie będzie wystarczająca
 
 ```cpp
 uint8_t value;
@@ -214,61 +220,63 @@ void SysTick_Handler(void)
 }
 ```
 
-## Liczniki TIMx [➥](#-content)
+## Liczniki TIM [➥](#-content)
+
+W procesorach STM32 liczników mamy naprawdę sporo. STM32G071RB posiada" TIM**1**, TIM**2**, TIM**3**, TIM**6**, TIM**7**, TIM**14**, TIM**15**, TIM**16**, TIM**17**. Różnią one się nieco między sobą. Np. **TIM1** jest najbardziej rozbudowany jeśli chodzi o peryferia i nalepiej sprawdza się podczas genrowania i zliczania sygnałów. **TIM2** ma zwiększoną rozdzielność, bo aż **32-bitów**. Pozostałe mają jedynie **16-bitów**. Jednak funkcjonalność jaką chcemy uzyskać _(czyli skok do przerwania z odpowiednim interwałem)_ uzyskamy wykorzystując nawet najbardziej ograniczone liczniki jakimi są **TIM6** i **TIM7**.
+
+Konfiguracja tego licznika nie będzie tak prosta jak w przypadku SystTick'a. Jak to w STM32 trzeba włączyć peryterium poprzez podanie sygnału zegarowego. Najważniejsymy rejestrami w licznikach są `PSC`, w którym określamy wartość prescalera oraz `ARR`, po której osiągnięciu licznik się zeruję (auto-reload). Wartości tych rejestrów wpłyną na czas zerowania.
+
+    T = (PSC - 1) * ARR / 16MHz (SystemCoreClock)
+
+Trzeba wskazać, aby to zdarzenie poinformowało rdzeń o swoim wystąpieniu `event`'u. W tym celu trzeba ustawić bit `UIE` w rejestrze `DIER`. Aby całość zadziałała rdzeń musi spodziewać się sygnału `event`. Z poziemu programu należy wywołać funckję `NVIC_EnableIRQ` z odpowiednią flagą `TIM6_DAC_LPTIM1_IRQn`. Można także ustawić priorytet przerwania od `0` do `3` funkcją `NVIC_SetPriority`, gdzie przerwania z **niższymi** wartościami będą wykonywane w pierwszej kolejności. Na końcu wystarczy włączyć licznik i wszystko powinno śmigać.
 
 ```cpp
 int main(void)
 {
   RCC->IOPENR |= RCC_IOPENR_GPIOCEN;
   GPIOC->MODER &= ~(3 << (2 * 5));
-  GPIOC->MODER |= (1 << (2 * 5));
+  GPIOC->MODER |= (1 << (2 * 5)); // gpio init
 
-  RCC->APBENR1 |= RCC_APBENR1_TIM6EN;
-  TIM6->PSC = 15999;
-  TIM6->ARR = 100;
-  TIM6->DIER |= TIM_DIER_UIE; // Peryferium
-  NVIC_SetPriority(TIM6_DAC_LPTIM1_IRQn, 0);
-  NVIC_EnableIRQ(TIM6_DAC_LPTIM1_IRQn); // Rdzeń ARM
-
-  TIM6->CR1 |= TIM_CR1_CEN;
-
-
-
-
+  RCC->APBENR1 |= RCC_APBENR1_TIM6EN; // turn on clock signal on TIM6
+  TIM6->PSC = 15999; // prescaler register
+  TIM6->ARR = 10; // auto-reload register
+  // T = (PSC - 1) * ARR / 16MHz (SystemCoreClock)
+  TIM6->DIER |= TIM_DIER_UIE; // interupt enable (peryfery)
+  NVIC_SetPriority(TIM6_DAC_LPTIM1_IRQn, 0); // interupt prioryty: 0 (arm-core)
+  NVIC_EnableIRQ(TIM6_DAC_LPTIM1_IRQn); // interupt enable (arm-core)
+  TIM6->CR1 |= TIM_CR1_CEN; // TIM6 enable
 
   while(1)
   {
-//    GPIOC->ODR |= (1 << 5);
-//    delay_ms(200);
-//    GPIOC->ODR &= ~(1 << 5);
-//    delay_ms(200);
+    __NOP(); // do nothing
   }
 }
+```
 
-void Blink(void)
+To znaczy, program główny powinien być przerywany co `100ms` i powinien _"przeskakiwać"_ do funkcji `TIM6_DAC_LPTIM1_IRQHandler`, gdzie powinniśmy upewnić się, czy na 100% źródłem przerwania jest TIM6, zrobić co trzeba _(w naszym przypadku mrugnąć diodą)_ oraz wyzerować flagę licznika.
+
+```cpp
+void TIM6_DAC_LPTIM1_IRQHandler(void)
 {
-	GPIOC->ODR ^= (1 << 5);
-	TIM6->ARR += 5;
-	if(TIM6->ARR > 200) TIM6->ARR = 20;
+  if(TIM6->SR & TIM_SR_UIF) { // if TIM6 auto-reload event
+    GPIOC->ODR ^= (1 << 5); // blink led
+    TIM6->SR &= ~TIM_SR_UIF; // clear TIM6 auto-reload flag
+  }
 }
+```
 
+Odradzam szukanie nazw przerwań w dokumentacji i internecie. Najlepiej odwiedzić plik [startup](./template/Src/startup.c). Wówczas mamy pewność, że przerwanie nam zadziała, gdyż te nazwy potrafią się różnić nawet w obrębie jednej rodziny mikroprocków :(
 
+Na koniec dodam, że nie możemy rejestrów `PSC` i `ARR` nie można traktować równorzędnie (choć ten przykład może to sugerować). Prescaler modyfikuje sygnał zegarowy hardware'owo, natomiast auto-reload jest jedynie wartością w rejestrze, do której licznik liczy. Znając tą różnicę, można się domyślić, że rejestr `ARR` możemy modyfikować _"w locie"_, wydłużając mignięcia diody z każdym przerwaniem.
+
+```cpp
 void TIM6_DAC_LPTIM1_IRQHandler(void)
 {
   if(TIM6->SR & TIM_SR_UIF) {
-	Blink();
-	TIM6->SR &= ~TIM_SR_UIF;
+    GPIOC->ODR ^= (1 << 5);
+    TIM6->ARR++;
+    TIM6->SR &= ~TIM_SR_UIF;
   }
-}
-
-void SysTick_Handler(void)
-{
-//  x++;
-//  if(x > 2) {
-//    x = 0;
-//	GPIOC->ODR ^= (1 << 5);
-//  }
-
 }
 ```
 
