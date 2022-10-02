@@ -3,80 +3,148 @@
 #include <stdlib.h>
 #include "stm32g0xx.h"
 #include "gpio.h"
-#include "delay.h"
+//#include "delay.h"
 
 //---------------------------------------------------------------------------------------------------------------------
 
-GPIO_t pwm1_gpio = { .gpio_typedef = GPIOA, .pin_no = 8, .mode = GPIO_Mode_Alternate, .alternate = 2 };
-GPIO_t pwm2_gpio = { .gpio_typedef = GPIOA, .pin_no = 9, .mode = GPIO_Mode_Alternate, .alternate = 2 };
-GPIO_t pwm3_gpio = { .gpio_typedef = GPIOA, .pin_no = 10, .mode = GPIO_Mode_Alternate, .alternate = 2 };
+#define delay_ms(ms) for(int _i = 1592 * ms; _i; _i--);
 
-void PWM_Init(void)
-{
-  GPIO_Init(&pwm1_gpio); // set PA8 on 2 alternate function
-  GPIO_Init(&pwm2_gpio); // ... PA9 ...
-  GPIO_Init(&pwm3_gpio); // ... PA10 ...
-
-  RCC->APBENR2 |= RCC_APBENR2_TIM1EN; // turn on the clock on TIM1
-
-  TIM1->CCER = TIM_CCER_CC3E | TIM_CCER_CC2E | TIM_CCER_CC1E; // output enable
-  TIM1->CCMR1 = TIM_CCMR1_OC2PE | TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1 |
-                TIM_CCMR1_OC1PE | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
-  TIM1->CCMR2 = TIM_CCMR2_OC3PE | TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1; // PWM mode
-
-  TIM1->PSC = 159;
-  TIM1->ARR = 1000;
-  // T = (PSC - 1) * ARR / SystemCoreClock
-
-  TIM1->DIER &= ~TIM_DIER_UIE;
-  TIM1->BDTR |= TIM_BDTR_MOE;
-  TIM1->EGR |= TIM_EGR_UG; // turn off Fuse
-  TIM1->CR1 |= TIM_CR1_CEN; // TIM enable
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-
-int16_t diff(int16_t value, uint8_t a, uint8_t b)
-{
-  return (value / a) + b;
-}
+bool state = false;
 
 int main(void)
 {
-  delay_init();
-  PWM_Init();
+  RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOCEN;
+  GPIOA->MODER &= ~(3 << (2 * 5));
+  GPIOA->MODER |= (1 << (2 * 5)); // PA5: output
+  GPIOC->MODER &= ~(3 << (2 * 13));
+  GPIOC->PUPDR |= (1 << (2 * 13)); // PC13: output
 
-  int16_t value1 = 0;
-  // int16_t value2 = 0;
-  // int16_t value3 = 0;
-  bool state1 = true;
-  // bool state2 = true;
-  // bool state3 = true;
+  EXTI->EXTICR[3] &= EXTI_EXTICR4_EXTI13_Msk;
+  EXTI->EXTICR[3] |= EXTI_EXTICR4_EXTI13_1;
+  EXTI->FTSR1 |= (1 << 13);
+  EXTI->RTSR1 |= (1 << 13);
+  EXTI->IMR1 |= (1 << 13);
+  NVIC_SetPriority(EXTI4_15_IRQn, 0);
+  NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   while(1)
   {
-    TIM1->CCR1 = value1;
-    delay_ms(5);
-    if(state1) {
-      value1 += diff(value1, 6, 1);
-      if(value1 > 1000) {
-        value1 = 1000;
-        state1 = !state1;
-      }
-    } else {
-      value1 += diff(value1, 6, 1);
-      if(value1 < 0) {
-        value1 = 0;
-        state1 = !state1;
-      }
-    }
+    __NOP();
   }
 }
 
-//---------------------------------------------------------------------------------------------------------------------
-
-void SysTick_Handler(void)
+void EXTI4_15_IRQHandler(void)
 {
-  // ...
+  if(EXTI->FPR1 & (1 << 13)) {
+    EXTI->FPR1 |= (1 << 13);
+    GPIOA->ODR ^= (1 << 5);
+  }
+  if(EXTI->RPR1 & (1 << 13)) {
+    EXTI->RPR1 |= (1 << 13);
+  }
 }
-//---------------------------------------------------------------------------------------------------------------------
+
+
+//int main(void)
+//{
+//  RCC->IOPENR |= RCC_IOPENR_GPIOCEN; // turn on clock signal on GPIOC
+//  RCC->IOPENR |= RCC_IOPENR_GPIOAEN; // turn on clock signal on GPIOA
+//
+//  GPIOC->MODER &= ~(3 << (2 * 5));
+//  GPIOC->MODER |= (1 << (2 * 5)); // PC5: output
+//
+//  GPIOA->MODER &= ~(3 << (2 * 13)); // PA13: input
+//  GPIOA->PUPDR |= (1 << (2 * 13)); // PA13: pull-up
+//
+//  while(1)
+//  {
+//    if(~GPIOA->IDR & (1 << 13)) // if(switch PA13 is clicked)
+//    {
+//      GPIOC->BSRR = (1 << 5); // light up PC5
+//    }
+//    else
+//    {
+//      GPIOC->BRR = (1 << 5); // put out PC5
+//    }
+//  }
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//int main2(void)
+//{
+//  RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOCEN;
+//  // RCC->IOPENR |= (1 << 0) | (1 << 2)
+//
+//  GPIOA->MODER &= ~(3 << (2 * 11)); // GPIO_MODER_MODE11
+//  GPIOA->MODER |= (1 << (2 * 11)); // GPIO_MODER_MODE11_0
+//  GPIOC->MODER &= ~(3 << (2 * 3)); // GPIO_MODER_MODE5
+//
+//  GPIOA->PUPDR |= (1 << (2 * 13)); // błąd gruby
+//  GPIOA->PUPDR |= (2 << (2 * 13)); // błąd mały
+//
+//  while(1)
+//  {
+//    if(GPIOC->IDR & (1 << 3)) // if(switch PC3 is clicked)
+//    {
+//      GPIOA->BRR = (1 << 11); // put out PA11
+//      // GPIOA->ODR &= ~GPIO_ODR_OD11;
+//    }
+//    else
+//    {
+//      GPIOA->BSRR = (1 << 11); // light up PA11
+//      //GPIOA->ODR |= GPIO_ODR_OD11;
+//    }
+//  }
+//}
+
+
+
+
+
+//int main(void)
+//{
+//  RCC->IOPENR |= RCC_IOPENR_GPIOCEN;
+//  GPIOC->MODER &= ~(3 << (2 * 5));
+//  GPIOC->MODER |= (1 << (2 * 5)); // gpio init
+//
+//  RCC->APBENR1 |= RCC_APBENR1_TIM7EN; // turn on clock signal on TIM7
+//  TIM7->PSC = 15999; // prescaler register
+//  TIM7->ARR = 10; // auto-reload register
+//  // T = (PSC - 1) * ARR / 16MHz (SystemCoreClock)
+//  TIM7->DIER |= TIM_DIER_UIE; // interupt enable (peryfery)
+//  NVIC_SetPriority(TIM7_LPTIM2_IRQn, 0); // interupt prioryty: 0 (arm-core)
+//  NVIC_EnableIRQ(TIM7_LPTIM2_IRQn); // interupt enable (arm-core)
+//  TIM7->CR1 |= TIM_CR1_CEN; // TIM7 enable
+//
+//  while(1) { __NOP(); }
+//}
+//
+//void TIM7_LPTIM2_IRQHandler(void)
+//{
+//  if(TIM7->SR & TIM_SR_UIF) { // if TIM7 auto-reload event
+//    GPIOC->ODR ^= (1 << 5); // blink led
+//    TIM7->SR &= ~TIM_SR_UIF; // clear TIM7 auto-reload flag
+//  }
+//}
+
+
+
+
+
+
+
+
