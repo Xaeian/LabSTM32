@@ -208,14 +208,14 @@ void SysTick_Handler(void)
 }
 ```
 
-Jeżeli z jakiegoś powodu rozdzielczość naszego licznika nie będzie wystarczająca
+Jeżeli z jakiegoś powodu rozdzielczość naszego licznika nie będzie wystarczająca najlepiej dodać zmienną pomocniczą, która będzie inkrementowana w przerwaniu. Gdy osiągnie zadaną wartość, wystarczy ją wyzerować i wykonać jakąś operacje. Systick ma 24 bity zatem możemy zliczać do `0xFFFFFF` = `16777215`, co do dla `16MHz` odpowiada niespełna `1.04ms`.
 
 ```cpp
 uint8_t value;
 void SysTick_Handler(void)
 {
-  if(value++ > 2) {
-    x = 0;
+  if(value++ > 20) { // for 2s
+    value = 0;
     GPIOC->ODR ^= (1 << 5);
   }
 }
