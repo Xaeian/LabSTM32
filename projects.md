@@ -34,13 +34,14 @@
 - Zliczanie całkowitego przepływu w zależności od wybranego profilu rury
 - Komunikacja z komputerem
 - Wyświetlenie danych lub zapis do bazy danych
-- Poziomica cyfrowa
+
+## 5. Poziomica cyfrowa
 - Konwersja wychylenia na sygnał analogowy `0-10V` lub `4-20mA`
 - Możliwość ustalenia wychylenia niebezpiecznego
 - Sygnał cyfrowy informujący o przekroczeniu wychylenia niebezpiecznego
-- Możliwie małe gabaryty
+- Możliwie małe gabaryty urządzenia
 
-## 5. Moduł zdalnego strowania światłami
+## 6. Moduł zdalnego strowania światłami
 
 - Możliwość sterowania manualnego
 - Interfejs urzytkownika z poziomu komputera lub telefonu
