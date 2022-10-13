@@ -45,7 +45,7 @@
 ## 6. Moduł zdalnego strowania światłami 🔒 `SiST2`
 
 - Możliwość sterowania manualnego
-- Interfejs urzytkownika z poziomu komputera lub telefonu
+- Interfejs użytkownika z poziomu komputera lub telefonu
 - Bezprzewodowa komunikacja z modułem
 
 
