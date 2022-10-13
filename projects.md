@@ -1,4 +1,4 @@
-## 1. Inkubator kurczaków
+## 1. Inkubator kurczaków 🔓
 
 - Możliwość regulacji temperatury
 - Równomierne rozprowadzenie temperatury w całym inkubatorze
@@ -11,7 +11,7 @@
   - Brak regulacji
 - Sygnał alarmu wyprowadzany do systemów nadrzętnych
 
-## 2. Inteligentny kurnik
+## 2. Inteligentny kurnik 🔓
 
 - Sterowanie oświetleniem symulującym słońce
 - Płynne rozświetlanie i gaszenie lamp
@@ -19,7 +19,7 @@
 - Możliwość ustawienia długości doby
 - Sygnał sterujący do sterowania dzrzwiami
 
-## 3. Przemysłowa waga wielkogabarytowa
+## 3. Przemysłowa waga wielkogabarytowa 🔓
 
 - Przystosowana do ważenia `~5-10T`
 - Wyświetlanie wagi
@@ -28,21 +28,36 @@
 - Opcja kalibracji oraz tarowania wagi
 - Tryb zliczania paczek o tej samej wadze
 
-## 4. Sterownik do przepływomierz Nivus
+## 4. Sterownik do przepływomierz Nivus 🔓
 
 - Komunikacja z czujnikiem
 - Zliczanie całkowitego przepływu w zależności od wybranego profilu rury
 - Komunikacja z komputerem
 - Wyświetlenie danych lub zapis do bazy danych
 
-## 5. Poziomica cyfrowa
+## 5. Poziomica cyfrowa 🔓
+
 - Konwersja wychylenia na sygnał analogowy `0-10V` lub `4-20mA`
 - Możliwość ustalenia wychylenia niebezpiecznego
 - Sygnał cyfrowy informujący o przekroczeniu wychylenia niebezpiecznego
 - Możliwie małe gabaryty urządzenia
 
-## 6. Moduł zdalnego strowania światłami
+## 6. Moduł zdalnego strowania światłami 🔒 `SiST2`
 
 - Możliwość sterowania manualnego
 - Interfejs urzytkownika z poziomu komputera lub telefonu
 - Bezprzewodowa komunikacja z modułem
+
+
+## 7. Hulajnoga elektryczna 🔒 `EM`
+
+- Trzy tryby pracy
+  - Zwykły
+  - Z ograniczeniem mocy
+  - Z ograniczeniem prędkości
+- Oświetlenie drogowe
+- Prędkościomierz _(opcjonalnie)_
+- Płynna regulacja prędkości 
+- System monitorowania i zabezpieczenia baterii
+- Amperometryka silnika
+- Kontrola temperatury na poszczególnych podzespołac _(opcjonalnie)_
