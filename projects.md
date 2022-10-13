@@ -60,4 +60,4 @@
 - Płynna regulacja prędkości 
 - System monitorowania i zabezpieczenia baterii
 - Amperometryka silnika
-- Kontrola temperatury na poszczególnych podzespołac _(opcjonalnie)_
+- Kontrola temperatury na poszczególnych podzespołach _(opcjonalnie)_
