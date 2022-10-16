@@ -61,3 +61,12 @@
 - System monitorowania i zabezpieczenia baterii
 - Amperometryka silnika
 - Kontrola temperatury na poszczególnych podzespołach _(opcjonalnie)_
+
+## 8. Moduł pomiaru temperatury 🔓
+
+- Komunikacja za pomocą protokołu Modbus RTC (slave)
+- Cztery (lub więcej) uniwersalne wejście temperaturowe
+- Obsługa trzech typów termometrów przemysłowych (`NTC`, `PT100`, `PT1000`, `Ni1000`, `KTY 81-210`)
+- Wzięcie pod uwagę nagrzewania się termometru pod wpływem przepływającego prządu
+  - Wyeliminowanie tego efektu
+
