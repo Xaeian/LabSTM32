@@ -31,6 +31,8 @@ void SPI_Software_Run(SPI_Software_t *spi, uint8_t *rx_ary, uint8_t *tx_ary, uin
 
 //---------------------------------------------------------------------------------------------------------------------
 
+#define HC595_SPACE 0x00
+#define HC595_MINUS 0x40
 #define HC595_BUFFER_SIZE 6
 
 typedef struct {
@@ -41,7 +43,21 @@ typedef struct {
 
 void HC595_Begin(void);
 void HC595_Send(void);
+
 void HC595_Sign(uint8_t sign, uint8_t pos);
+void HC595_Signs(uint8_t s0, uint8_t s1, uint8_t s2, uint8_t s3, uint8_t s4);
+void HC595_Dot(uint8_t pos);
+void HC595_Dec(int32_t nbr);
+void HC595_Hex(int32_t nbr);
+void HC595_Float(float nbr, uint8_t prec);
+void HC595_FloatAutoPrecision(float nbr);
+
+void HC595_LedOne(uint8_t pos);
+void HC595_LedSet(uint8_t pos);
+void HC595_LedRst(uint8_t pos);
+void HC595_LedTgl(uint8_t pos);
+void HC595_LedClear(uint8_t pos);
+
 extern SPI_Software_t hc595_spi;
 
 //---------------------------------------------------------------------------------------------------------------------
