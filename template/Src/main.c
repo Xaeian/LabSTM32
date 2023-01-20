@@ -8,8 +8,9 @@
 
 int main(void)
 {
-
-
+  HC595_Begin();
+  HC595_Dec(12345);
+  HC595_Send();
 
   while(1) {
 

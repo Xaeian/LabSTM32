@@ -3,7 +3,7 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <stdio.h>
+#include "exstring.h"
 #include "gpio.h"
 #include "stm32g0xx.h"
 
