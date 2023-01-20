@@ -5,6 +5,9 @@
 - [Biblioteka GPIO](#biblioteka-gpio-)
 - [Biblioteka DELAY](#biblioteka-delay-)
 - [Sygnał PWM](#sygnał-pwm-)
+- [Przetwornik analogowo cyfrowy ADC](#przetwornik-analogowo-cyfrowy-adc-)
+- [Komunikacja UART](#komunikacja-uart-)
+- [Układ nadzorujący Watchdog](#uklad-nadzorujący-watchdog-)
 
 Podczas tego kursu będziemy pracowali z procesorem **STM32G071RB** na deb-board'zie **nucleo**. Pracując takimy płytkami dobrze jest mieć pod ręką rysunek z oznaczonymi wyprowadzeniamu. Nie ma za  co 😜
 
@@ -493,8 +496,6 @@ Trzeba jednak pamiętać, że TIM'ery wymagają inicjacji, stąd funkcja `delay_
 
 Sygnał **PWM** _Pulse Width Modulation_ jest sygnałem prostokątnym, który tenicznie bardzo prosto uzyskać z poziomu nikrokontrolera za pomocą kluczowania sygnału sterującego (zwykłego wyjścia GPIO) w takt licznika.
 
-
-
 ```cpp
 #include <stdbool.h>
 #include <stdint.h>
@@ -503,7 +504,7 @@ Sygnał **PWM** _Pulse Width Modulation_ jest sygnałem prostokątnym, który te
 #include "gpio.h"
 #include "delay.h"
 
-//---------------------------------------------------------------------------------------------------------------------
+////-------------------------------------------------------------------------------------------------
 
 GPIO_t pwm1_gpio = { .gpio_typedef = GPIOA, .pin_no = 8, .mode = GPIO_Mode_Alternate, .alternate = 2 };
 GPIO_t pwm2_gpio = { .gpio_typedef = GPIOA, .pin_no = 9, .mode = GPIO_Mode_Alternate, .alternate = 2 };
@@ -532,7 +533,7 @@ void PWM_Init(void)
   TIM1->CR1 |= TIM_CR1_CEN; // TIM enable
 }
 
-//---------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 
 int16_t diff(int16_t value, uint8_t a, uint8_t b)
 {
@@ -569,5 +570,201 @@ int main(void)
       }
     }
   }
+}
+```
+
+# Przetwornik analogowo cyfrowy ADC [➥](#-content)
+
+Konfiguracja przetwornika ADC
+
+```cpp
+RCC->IOPENR |= RCC_IOPSMENR_GPIOBSMEN;
+RCC->APBENR2 |= RCC_APBENR2_ADCEN;
+
+ADC1->CR |= ADC_CR_ADVREGEN; // ADC Voltage Regulator Enable
+for(uint32_t i = 0; i < SystemCoreClock / 500000; i++) __DSB();
+
+ADC1->CR &= ~ADC_CR_ADEN;
+ADC1->CFGR1 &= ~ADC_CFGR1_DMAEN;
+ADC1->CR |= ADC_CR_ADCAL; // Calibration
+while(!(ADC1->ISR & ADC_ISR_EOCAL)) __DSB();
+ADC1->ISR |= ADC_ISR_EOCAL;
+
+ADC->CCR |= (7 << ADC_CCR_PRESC_Pos);
+ADC1->CHSELR = (1 << 9); // Active channel ADC_IN9 - PB1
+
+NVIC_EnableIRQ(ADC1_COMP_IRQn);
+NVIC_SetPriority(ADC1_COMP_IRQn, 3);
+
+ADC1->CFGR2 = (4 << ADC_CFGR2_OVSS_Pos) | (7 << ADC_CFGR2_OVSR_Pos) | ADC_CFGR2_OVSE;
+ADC1->SMPR = (7 << ADC_SMPR_SMP1_Pos);
+
+do {
+  ADC1->CR |= ADC_CR_ADEN;
+} while((ADC1->ISR & ADC_ISR_ADRDY) == 0);
+```
+
+Funkcja uruchamiająca pomiar ADC
+
+```cpp
+void adc_start()
+{
+  ADC1->IER |= ADC_IER_EOCIE;
+  ADC1->CR |= ADC_CR_ADSTART;
+}
+```
+
+Zmienne globalne
+
+```cpp
+uint16_t volatile adc_output;
+uint8_t volatile adc_flag;
+```
+
+Przerwanie
+
+```cpp
+void ADC_COMP_IRQHandler(void)
+{
+  if(ADC1->ISR & ADC_ISR_EOC)
+  {
+    ADC1->ISR |= ADC_ISR_EOC;
+    adc_output = ADC1->DR;
+    adc_flag = 1;
+  }
+}
+```
+
+Aplikacja cyklicznie wykonująca pomiar
+
+```cpp
+adc_start();
+
+while(1)
+{
+  if(adc_flag)
+  {
+    adc_flag = 0;
+    // <--- breakpoint
+    adc_start();
+  }
+}
+```
+
+# Komunikacja UART [➥](#-content)
+
+Konfiguracja GPIO
+
+```cpp
+RCC->IOPENR |= RCC_IOPSMENR_GPIOASMEN;
+GPIOA->MODER &= ~(GPIO_MODER_MODE9_Msk | GPIO_MODER_MODE10_Msk);
+GPIOA->MODER |= (2 << GPIO_MODER_MODE9_Pos) | (2 << GPIO_MODER_MODE10_Pos);
+GPIOA->AFR[1] &= ~(GPIO_AFRH_AFSEL9_Msk | GPIO_AFRH_AFSEL10_Msk);
+GPIOA->AFR[1] |= (1 << GPIO_AFRH_AFSEL9_Pos) | (1 << GPIO_AFRH_AFSEL10_Pos);
+```
+
+Konfiguracja UART
+
+```cpp
+RCC->APBENR2 |= RCC_APBENR2_USART1EN;
+USART1->BRR = SystemCoreClock / 9600;
+USART1->CR3 |= USART_CR3_OVRDIS;
+while((USART1->ISR & USART_ISR_TC) != USART_ISR_TC);
+USART1->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+
+USART1->CR1 |= USART_CR1_RXNEIE_RXFNEIE | USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+NVIC_SetPriority(USART1_IRQn, 2);
+NVIC_EnableIRQ(USART1_IRQn);
+
+USART1->ICR |= USART_ICR_TCCF;
+USART1->RQR |= USART_RQR_RXFRQ;
+```
+
+Wysyłanie konejnych znaków
+
+```cpp
+uint8_t var = '0';
+while(1) {
+  USART1->TDR = var;
+  var++;
+  delay_ms(200);
+}
+```
+
+Odbieranie i odsyłanie zakodowanych znaków koden cezara
+
+```cpp
+void USART1_IRQHandler(void)
+{
+  if(USART1->ISR & USART_ISR_RXNE_RXFNE)
+  {
+    uint8_t var = (uint8_t)(USART1->RDR);
+
+    if(var >= 'a' && var <= 'z')
+    {
+      var += 3;
+      if(var > 'z')
+        var -= ('z' - 'a' + 1);
+      USART1->TDR = var;
+    }
+  }
+}
+```
+
+# Układ nadzorujący Watchdog [➥](#-content)
+
+Nagłówki:
+
+```cpp
+#define IWDG_REFRESH 0x0000AAAA
+#define IWDG_WRITE_ACCESS 0x00005555
+#define IWDG_START 0x0000CCCC
+
+typedef enum
+{
+  IWDG_Time_125us = 0,
+  IWDG_Time_250us = 1,
+  IWDG_Time_500us = 2,
+  IWDG_Time_1ms = 3,
+  IWDG_Time_2ms = 4,
+  IWDG_Time_4ms = 5,
+  IWDG_Time_8ms = 6
+}
+IWDG_Time_e;
+```
+
+Inicjacja:
+
+```cpp
+if(RCC->CSR & RCC_CSR_IWDGRSTF)
+{
+  RCC->CSR |= RCC_CSR_RMVF;
+  delay_ms(200);
+  GPIOA->BSRR |= GPIO_BSRR_BS5;
+  delay_ms(200);
+  GPIOA->BSRR |= GPIO_BSRR_BR5;
+}
+
+IWDG->KR = IWDG_START;
+IWDG->KR = IWDG_WRITE_ACCESS;
+IWDG->PR = IWDG_Time_4ms;
+IWDG->RLR = 500;
+while(IWDG->SR);
+IWDG->KR = IWDG_REFRESH; // Konfiguracja IWDG
+```
+
+Reset:
+
+```cpp
+IWDG->KR = IWDG_REFRESH;
+```
+
+Sprawdzenie:
+
+```cpp
+if(RCC->CSR & RCC_CSR_IWDGRSTF)
+{
+  RCC->CSR |= RCC_CSR_RMVF;
+  // ...
 }
 ```
