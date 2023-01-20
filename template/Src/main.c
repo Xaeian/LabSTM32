@@ -34,6 +34,28 @@ void adc_conf(void)
   } while((ADC1->ISR & ADC_ISR_ADRDY) == 0);
 }
 
+void uart_conf(void)
+{
+  RCC->IOPENR |= RCC_IOPSMENR_GPIOCSMEN;
+  GPIOC->MODER &= ~(GPIO_MODER_MODE4_Msk | GPIO_MODER_MODE5_Msk);
+  GPIOC->MODER |= (2 << GPIO_MODER_MODE4_Pos) | (2 << GPIO_MODER_MODE5_Pos);
+  GPIOC->AFR[0] &= ~(GPIO_AFRL_AFSEL4_Msk | GPIO_AFRL_AFSEL5_Msk);
+  GPIOC->AFR[0] |= (1 << GPIO_AFRL_AFSEL4_Pos) | (1 << GPIO_AFRL_AFSEL5_Pos);
+
+  RCC->APBENR2 |= RCC_APBENR2_USART1EN;
+  USART1->BRR = SystemCoreClock / 9600;
+  USART1->CR3 |= USART_CR3_OVRDIS;
+  while((USART1->ISR & USART_ISR_TC) != USART_ISR_TC);
+  USART1->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+
+  USART1->CR1 |= USART_CR1_RXNEIE_RXFNEIE | USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+  NVIC_SetPriority(USART1_IRQn, 2);
+  NVIC_EnableIRQ(USART1_IRQn);
+
+  USART1->ICR |= USART_ICR_TCCF;
+  USART1->RQR |= USART_RQR_RXFRQ;
+}
+
 void adc_start(void)
 {
   ADC1->IER |= ADC_IER_EOCIE;
@@ -43,10 +65,13 @@ void adc_start(void)
 uint16_t volatile adc_output;
 uint8_t volatile adc_flag;
 
+uint8_t var = '0';
+
 int main(void)
 {
   HC595_Begin();
   adc_conf();
+  uart_conf();
   adc_start();
   while(1)
   {
@@ -57,6 +82,9 @@ int main(void)
       HC595_Send();
       adc_start();
     }
+    USART1->TDR = var;
+    var++;
+    delay_ms(50);
   }
 }
 
@@ -67,5 +95,20 @@ void ADC_COMP_IRQHandler(void)
     ADC1->ISR |= ADC_ISR_EOC;
     adc_output = ADC1->DR;
     adc_flag = 1;
+  }
+}
+
+void USART1_IRQHandler(void)
+{
+  if(USART1->ISR & USART_ISR_RXNE_RXFNE)
+  {
+    uint8_t var = (uint8_t)(USART1->RDR);
+//    if(var >= 'a' && var <= 'z')
+//    {
+//      var += 3;
+//      if(var > 'z')
+//        var -= ('z' - 'a' + 1);
+//      USART1->TDR = var;
+//    }
   }
 }
