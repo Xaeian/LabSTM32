@@ -157,7 +157,7 @@ static void HC595_Int(int32_t nbr, uint8_t base)
 
 void HC595_Dec(int32_t nbr)
 {
-  HC595_Int(nbr, 10);;
+  HC595_Int(nbr, 10);
 }
 
 void HC595_Hex(int32_t nbr)

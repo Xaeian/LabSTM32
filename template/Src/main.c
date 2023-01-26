@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "stm32g0xx.h"
+#include "exstring.h"
 #include "hc595.h"
 
 #define delay_ms(ms) for(int _i = 1592 * ms; _i; _i--);
@@ -56,7 +57,7 @@ void uart_conf(void)
   USART1->RQR |= USART_RQR_RXFRQ;
 }
 
-void adc_start(void)
+void adc_start()
 {
   ADC1->IER |= ADC_IER_EOCIE;
   ADC1->CR |= ADC_CR_ADSTART;
@@ -64,15 +65,29 @@ void adc_start(void)
 
 uint16_t volatile adc_output;
 uint8_t volatile adc_flag;
+uint8_t volatile uart_read;
 
-uint8_t var = '0';
+void uart_send_dec(uint16_t nbr)
+{
+  char *str = itoa_dec(nbr);
+  while(*str)
+  {
+    USART1->TDR = *str;
+    str++;
+    delay_ms(5);
+  }
+  USART1->TDR = '\r';
+  delay_ms(5);
+  USART1->TDR = '\n';
+  delay_ms(5);
+}
 
 int main(void)
 {
-  HC595_Begin();
-  adc_conf();
   uart_conf();
+  adc_conf();
   adc_start();
+  HC595_Begin();
   while(1)
   {
     if(adc_flag)
@@ -80,11 +95,9 @@ int main(void)
       adc_flag = 0;
       HC595_Dec(adc_output);
       HC595_Send();
+      uart_send_dec(adc_output);
       adc_start();
     }
-    USART1->TDR = var;
-    var++;
-    delay_ms(50);
   }
 }
 
@@ -102,13 +115,6 @@ void USART1_IRQHandler(void)
 {
   if(USART1->ISR & USART_ISR_RXNE_RXFNE)
   {
-    uint8_t var = (uint8_t)(USART1->RDR);
-//    if(var >= 'a' && var <= 'z')
-//    {
-//      var += 3;
-//      if(var > 'z')
-//        var -= ('z' - 'a' + 1);
-//      USART1->TDR = var;
-//    }
+    uart_read = (uint8_t)(USART1->RDR);
   }
 }
